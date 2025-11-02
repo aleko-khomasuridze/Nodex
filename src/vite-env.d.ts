@@ -7,6 +7,12 @@ declare global {
       send: (channel: string, data?: unknown) => void;
       on: (channel: string, listener: (...args: unknown[]) => void) => void;
     };
+    networkScan?: {
+      scan: () => Promise<{
+        ip: string;
+        hostname?: string | null;
+      }[]>;
+    };
   }
 }
 
