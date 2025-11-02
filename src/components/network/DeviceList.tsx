@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export type NetworkDevice = {
   ip: string;
   hostname?: string | null;
@@ -18,7 +20,7 @@ const DeviceList = ({ devices }: DeviceListProps) => {
         {devices.length} device{devices.length === 1 ? '' : 's'} ready for SSH
       </h3>
       <ul className="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60 shadow-lg">
-        {devices.map((device) => {
+        {devices.map((device, index) => {
           const primaryLabel = device.hostname && device.hostname !== device.ip ? device.hostname : device.ip;
 
           return (
@@ -33,6 +35,9 @@ const DeviceList = ({ devices }: DeviceListProps) => {
               <span className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300 sm:self-auto">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" /> SSH available
               </span>
+              <Link to={`/ssh-config/${index}`} className="focus:outline-none text-white bg-gray-700 hover:bg-emerald-600 font-medium rounded-lg text-sm px-4 py-2 ">
+                Connect
+              </Link>
             </li>
           );
         })}
