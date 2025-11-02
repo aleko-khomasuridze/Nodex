@@ -9,3 +9,7 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on(channel, (_event, ...args) => listener(...args));
   }
 });
+
+contextBridge.exposeInMainWorld('networkScan', {
+  scan: () => ipcRenderer.invoke('network-scan')
+});
