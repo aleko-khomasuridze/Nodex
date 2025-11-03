@@ -20,7 +20,7 @@ const Sidebar = ({ collapsed, navigationItems, onToggleCollapse }: SidebarProps)
   return (
     <aside
       className={`flex flex-col border-r border-slate-900/70 bg-slate-950/80 backdrop-blur transition-all duration-200 ${
-        collapsed ? 'w-20' : 'w-64'
+        collapsed ? 'w-16.5' : 'w-64'
       }`}
     >
       <div className="flex items-center justify-between px-4 pb-4 pt-6">
@@ -48,7 +48,7 @@ const Sidebar = ({ collapsed, navigationItems, onToggleCollapse }: SidebarProps)
               key={item.id}
               to={item.path}
               className={({ isActive }) =>
-                `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                `group flex items-center gap-2 rounded-lg p-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                   isActive
                     ? 'bg-emerald-500/10 text-emerald-200 ring-1 ring-emerald-400/40'
                     : 'text-slate-400 hover:bg-slate-900/70 hover:text-slate-100'
