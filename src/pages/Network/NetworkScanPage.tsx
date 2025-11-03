@@ -73,10 +73,10 @@ const NetworkScanPage = () => {
   }, []);
 
   return (
-    <article className='w-100 h-100 flex align-middle justify-content-center bg-slate-800'>
-      <main className='container'>
-        <section className='w-100 h-100'>
-          <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-6p-8 p-8">
+    <article className="min-h-screen bg-slate-950 py-12">
+      <main className="mx-auto flex max-w-5xl flex-1 flex-col px-4">
+        <section className="flex flex-1 flex-col">
+          <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
             <ScanControls
               isScanning={isScanning}
               lastScan={lastScan}

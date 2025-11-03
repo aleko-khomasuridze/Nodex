@@ -1,31 +1,44 @@
 
 interface FormInputProps {
-    className?: string;
-    type?: string | 'email' | 'password' | 'text' | 'date' ;
-    id: string
-    isRequired?: boolean;
-    label: string;
-    placeHolder?: string
-    value?: string
+  className?: string;
+  type?: string | "email" | "password" | "text" | "date" | "number";
+  id: string;
+  isRequired?: boolean;
+  label: string;
+  placeHolder?: string;
+  value?: string;
+  helperText?: string;
 }
 
-const FormInput = ({ className, type, id, isRequired, label, placeHolder, value }: FormInputProps) => {
+const FormInput = ({
+  className,
+  type = "text",
+  id,
+  isRequired,
+  label,
+  placeHolder,
+  value,
+  helperText,
+}: FormInputProps) => {
   return (
-    <div className={`mb-5 ${className}`}>
+    <div className={`mb-5 ${className ?? ""}`}>
       <label
-        form={id}
-        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+        htmlFor={id}
+        className="mb-2 block text-sm font-medium text-slate-200"
       >
         {label}
       </label>
       <input
         type={type}
         id={id}
-        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        className="block w-full rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-sm text-slate-100 placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/40"
         required={isRequired}
         placeholder={placeHolder}
-        value={value}
+        defaultValue={value}
       />
+      {helperText ? (
+        <p className="mt-1 text-xs text-slate-400">{helperText}</p>
+      ) : null}
     </div>
   );
 };
