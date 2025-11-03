@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import type { RegisteredDevice } from "../../types/device";
 
 const formatTimestamp = (value: string) => {
@@ -15,6 +15,8 @@ const AvailableDevicesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const canExecute = useMemo(() => Boolean(window.terminal?.startSession), []);
 
   const loadDevices = useCallback(async () => {
     if (!window.devices?.list) {
@@ -65,6 +67,13 @@ const AvailableDevicesPage = () => {
       }
     },
     [loadDevices]
+  );
+
+  const handleExecute = useCallback(
+    (id: string) => {
+      navigate(`/terminal/${id}`);
+    },
+    [navigate]
   );
 
   return (
@@ -157,7 +166,27 @@ const AvailableDevicesPage = () => {
                           </p>
                         ) : null}
                       </div>
-                      <div className="flex items-center gap-3 self-start md:self-auto">
+                      <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+                        <Link
+                          to={`/available-devices/${device.id}`}
+                          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
+                        >
+                          View
+                        </Link>
+                        <Link
+                          to={`/available-devices/${device.id}/edit`}
+                          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleExecute(device.id)}
+                          disabled={!canExecute}
+                          className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Execute
+                        </button>
                         <button
                           type="button"
                           onClick={() => void handleRemove(device.id)}
