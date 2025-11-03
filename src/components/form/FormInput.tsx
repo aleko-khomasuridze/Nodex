@@ -21,7 +21,7 @@ const FormInput = ({
   helperText,
 }: FormInputProps) => {
   return (
-    <div className={`mb-5 ${className ?? ""}`}>
+    <div className={`mb-3 ${className ?? ""}`}>
       <label
         htmlFor={id}
         className="mb-2 block text-sm font-medium text-slate-200"

@@ -20,7 +20,7 @@ const DeviceList = ({ devices }: DeviceListProps) => {
         {devices.length} device{devices.length === 1 ? '' : 's'} ready for SSH
       </h3>
       <ul className="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60 shadow-lg">
-        {devices.map((device, index) => {
+        {devices.map((device) => {
           const primaryLabel = device.hostname && device.hostname !== device.ip ? device.hostname : device.ip;
 
           return (
@@ -32,12 +32,14 @@ const DeviceList = ({ devices }: DeviceListProps) => {
                   {device.hostname && device.hostname !== device.ip ? ` • ${device.hostname}` : ''}
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300 sm:self-auto">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" /> SSH available
-              </span>
-              <Link to={`/device-registration/${device.ip}`} className="focus:outline-none text-white bg-emerald-700 hover:bg-emerald-600 font-medium rounded-lg text-sm px-4 py-2 ">
-                Register
-              </Link>
+              <div>
+                <span className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-500/10 px-3 py-1 lg:me-[8em] me-[4em] text-xs font-semibold uppercase tracking-wide text-emerald-300 sm:self-auto">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" /> ssh Available
+                </span>
+                <Link to={`/device-registration/${device.ip}`} className="focus:outline-none text-emerald-400 hover:text-white bg-transparent border border-emerald-600 hover:bg-emerald-600 font-medium rounded-lg text-sm px-4 py-2 ">
+                  Register
+                </Link>
+              </div>
             </li>
           );
         })}
