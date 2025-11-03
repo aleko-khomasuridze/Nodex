@@ -13,6 +13,17 @@ declare global {
         hostname?: string | null;
       }[]>;
     };
+    devices?: {
+      list: () => Promise<import('./types/device').RegisteredDevice[]>;
+      register: (
+        payload: import('./types/device').DeviceRegistrationPayload
+      ) => Promise<import('./types/device').RegisteredDevice>;
+      update: (
+        id: string,
+        updates: Partial<import('./types/device').DeviceRegistrationPayload>
+      ) => Promise<import('./types/device').RegisteredDevice>;
+      remove: (id: string) => Promise<void>;
+    };
   }
 }
 
