@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NetworkDevice } from "../../components/network/DeviceList";
 import FormInput from "../../components/form/FormInput";
+import { Link } from "react-router-dom";
 
 const LOCAL_STORAGE_KEY = "cachedDevices";
 
@@ -39,12 +40,15 @@ const DeviceRegistration = () => {
         <section className="flex flex-1 flex-col justify-center">
           <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
             <header className="mb-8 flex flex-col gap-2 text-center">
-              <p className="text-sm uppercase tracking-widest text-emerald-400">Device Registration</p>
+              <p className="text-sm uppercase tracking-widest text-emerald-400">
+                Device Registration
+              </p>
               <h1 className="text-3xl font-semibold text-white">
                 {device?.hostname ?? "New Device"}
               </h1>
               <p className="text-sm text-slate-400">
-                Provide the connection details for {device?.ip ?? "your device"} to finish registration.
+                Provide the connection details for {device?.ip ?? "your device"}{" "}
+                to finish registration.
               </p>
             </header>
             <form className="grid gap-5 md:grid-cols-2">
@@ -85,6 +89,11 @@ const DeviceRegistration = () => {
                   className="w-full rounded-lg bg-emerald-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/40"
                 >
                   Complete Registration
+                </button>
+              </div>
+              <div className="md:col-span-2">
+                <button className="w-full rounded-lg bg-slate-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-500 focus:outline-none focus:ring-4 ">
+                  <Link to="/network-scan">Cancel</Link>
                 </button>
               </div>
             </form>
