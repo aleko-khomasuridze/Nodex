@@ -23,43 +23,4 @@ contextBridge.exposeInMainWorld('devices', {
   remove: (id: string) => ipcRenderer.invoke('devices:remove', id)
 });
 
-contextBridge.exposeInMainWorld('terminal', {
-  startSession: (deviceId: string) =>
-    ipcRenderer.invoke('terminal:start', { deviceId }),
-  sendInput: (sessionId: string, input: string) =>
-    ipcRenderer.send('terminal:input', { sessionId, input }),
-  stopSession: (sessionId: string) =>
-    ipcRenderer.invoke('terminal:stop', { sessionId }),
-  onData: (
-    listener: (payload: { sessionId: string; data: string }) => void
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: { sessionId: string; data: string }
-    ) => listener(payload);
-    ipcRenderer.on('terminal:data', handler);
-    return () => ipcRenderer.removeListener('terminal:data', handler);
-  },
-  onClosed: (
-    listener: (
-      payload: { sessionId: string; code: number | null; signal: string | null }
-    ) => void
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: { sessionId: string; code: number | null; signal: string | null }
-    ) => listener(payload);
-    ipcRenderer.on('terminal:closed', handler);
-    return () => ipcRenderer.removeListener('terminal:closed', handler);
-  },
-  onError: (
-    listener: (payload: { sessionId: string; message: string }) => void
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: { sessionId: string; message: string }
-    ) => listener(payload);
-    ipcRenderer.on('terminal:error', handler);
-    return () => ipcRenderer.removeListener('terminal:error', handler);
-  }
-});
+// SSH execution has moved to native terminals, so no terminal bridge is exposed.

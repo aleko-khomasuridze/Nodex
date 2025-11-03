@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { RegisteredDevice } from "../../types/device";
 
@@ -16,7 +16,6 @@ const DeviceDetailsPage = () => {
   const [device, setDevice] = useState<RegisteredDevice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const canExecute = useMemo(() => Boolean(window.terminal?.startSession), []);
 
   useEffect(() => {
     const loadDevice = async () => {
@@ -84,11 +83,10 @@ const DeviceDetailsPage = () => {
                   </Link>
                   <button
                     type="button"
-                    className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10"
                     onClick={() => navigate(`/terminal/${device.id}`)}
-                    disabled={!canExecute}
                   >
-                    Execute
+                    View SSH command
                   </button>
                 </>
               ) : null}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { RegisteredDevice } from "../../types/device";
 
@@ -16,7 +16,6 @@ const AvailableDevicesPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const canExecute = useMemo(() => Boolean(window.terminal?.startSession), []);
 
   const loadDevices = useCallback(async () => {
     if (!window.devices?.list) {
@@ -69,7 +68,7 @@ const AvailableDevicesPage = () => {
     [loadDevices]
   );
 
-  const handleExecute = useCallback(
+  const handleShowInstructions = useCallback(
     (id: string) => {
       navigate(`/terminal/${id}`);
     },
@@ -181,11 +180,10 @@ const AvailableDevicesPage = () => {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => handleExecute(device.id)}
-                          disabled={!canExecute}
-                          className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={() => handleShowInstructions(device.id)}
+                          className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10"
                         >
-                          Execute
+                          View SSH command
                         </button>
                         <button
                           type="button"

@@ -4,7 +4,6 @@ import { scanNetworkForSsh } from './backend/networkScan';
 import { JsonDeviceRepository } from './backend/devices/JsonDeviceRepository';
 import { DeviceController } from './backend/devices/DeviceController';
 import { DeviceValidationError } from './backend/devices/DeviceValidation';
-import { SshSessionManager } from './backend/terminal/SshSessionManager';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -61,87 +60,6 @@ const registerDeviceHandlers = (controller: DeviceController) => {
   });
 };
 
-const registerTerminalHandlers = (
-  controller: DeviceController,
-  sessionManager: SshSessionManager
-) => {
-  ipcMain.handle(
-    'terminal:start',
-    async (
-      event,
-      payload: { deviceId?: string }
-    ): Promise<{ sessionId: string }> => {
-      const { deviceId } = payload ?? {};
-      if (!deviceId) {
-        throw new Error('A device identifier is required to start an SSH session.');
-      }
-
-      try {
-        const device = await controller.getDevice(deviceId);
-        const webContents = event.sender;
-        return await sessionManager.startSession(device, {
-          onData: (sessionId, chunk) => {
-            webContents.send('terminal:data', { sessionId, data: chunk });
-          },
-          onError: (sessionId, error) => {
-            webContents.send('terminal:error', {
-              sessionId,
-              message: error.message
-            });
-          },
-          onClose: (sessionId, details) => {
-            webContents.send('terminal:closed', {
-              sessionId,
-              code: details.code,
-              signal: details.signal
-            });
-          }
-        });
-      } catch (error: unknown) {
-        if (error instanceof DeviceValidationError) {
-          throw new Error(error.message);
-        }
-        if (error instanceof Error) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
-    }
-  );
-
-  ipcMain.on(
-    'terminal:input',
-    (event, payload: { sessionId?: string; input?: string }) => {
-      const { sessionId, input } = payload ?? {};
-      if (!sessionId || typeof input !== 'string') {
-        return;
-      }
-      try {
-        sessionManager.sendInput(sessionId, input);
-      } catch (error: unknown) {
-        event.sender.send('terminal:error', {
-          sessionId,
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Unable to send data to the SSH session.'
-        });
-      }
-    }
-  );
-
-  ipcMain.handle(
-    'terminal:stop',
-    async (_event, payload: { sessionId?: string }): Promise<void> => {
-      const { sessionId } = payload ?? {};
-      if (!sessionId) {
-        return;
-      }
-      await sessionManager.stopSession(sessionId);
-    }
-  );
-};
-
 async function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1024,
@@ -183,8 +101,6 @@ ipcMain.handle('network-scan', async () => {
 app.whenReady().then(async () => {
   const deviceController = createDeviceController();
   registerDeviceHandlers(deviceController);
-  const terminalManager = new SshSessionManager();
-  registerTerminalHandlers(deviceController, terminalManager);
 
   await createWindow();
 
