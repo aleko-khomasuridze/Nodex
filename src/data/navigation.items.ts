@@ -1,5 +1,5 @@
-import { RiDeviceLine, RiHome5Line, RiRadarLine, RiSettings2Line, RiSettings3Line, RiSettingsLine, RiTerminalBoxLine } from '@remixicon/react';
-import { NavigationItem } from '../components/navigation/Sidebar';
+import { RiDeviceLine, RiHome5Line, RiRadarLine, RiSettings3Line, RiTerminalBoxLine } from '@remixicon/react';
+import type { NavigationItem } from '../components/navigation/Sidebar';
 
 const navigationItems: NavigationItem[] = [
   {
@@ -25,7 +25,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     id: 'terminal',
-    label: 'Terminal',
+    label: 'SSH Guide',
     // description: 'Welcome to the Nodex toolkit.',
     path: '/terminal',
     icon: RiTerminalBoxLine
@@ -36,7 +36,7 @@ const navigationItems: NavigationItem[] = [
     // description: 'Welcome to the Nodex toolkit.',
     path: '/settings',
     icon: RiSettings3Line
-  },
+  }
 ];
 
-export default navigationItems
+export default navigationItems;
