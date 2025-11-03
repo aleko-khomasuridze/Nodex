@@ -5,6 +5,14 @@ import { DeviceValidationError, validateAndNormalizeInput } from './DeviceValida
 export class DeviceController {
   constructor(private readonly repository: DeviceRepository) {}
 
+  async getDevice(id: string): Promise<DeviceRecord> {
+    const record = await this.repository.getById(id);
+    if (!record) {
+      throw new DeviceValidationError('Unable to locate the requested device.');
+    }
+    return record;
+  }
+
   async listDevices(): Promise<DeviceRecord[]> {
     return this.repository.getAll();
   }
