@@ -29,6 +29,10 @@ declare global {
       startSession: (deviceId: string) => Promise<{ sessionId: string }>;
       sendInput: (sessionId: string, input: string) => void;
       stopSession: (sessionId: string) => Promise<void>;
+      startLocalSession: () => Promise<{ sessionId: string }>;
+      sendLocalInput: (sessionId: string, input: string) => void;
+      stopLocalSession: (sessionId: string) => Promise<void>;
+      resizeLocalSession: (sessionId: string, cols: number, rows: number) => void;
       onData: (
         listener: (payload: { sessionId: string; data: string }) => void
       ) => () => void;
@@ -38,6 +42,17 @@ declare global {
         ) => void
       ) => () => void;
       onError: (
+        listener: (payload: { sessionId: string; message: string }) => void
+      ) => () => void;
+      onLocalData: (
+        listener: (payload: { sessionId: string; data: string }) => void
+      ) => () => void;
+      onLocalClosed: (
+        listener: (
+          payload: { sessionId: string; code: number | null; signal: string | null }
+        ) => void
+      ) => () => void;
+      onLocalError: (
         listener: (payload: { sessionId: string; message: string }) => void
       ) => () => void;
     };

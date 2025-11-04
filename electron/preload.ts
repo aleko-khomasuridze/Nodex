@@ -30,6 +30,13 @@ contextBridge.exposeInMainWorld('terminal', {
     ipcRenderer.send('terminal:input', { sessionId, input }),
   stopSession: (sessionId: string) =>
     ipcRenderer.invoke('terminal:stop', { sessionId }),
+  startLocalSession: () => ipcRenderer.invoke('terminal:start-local'),
+  sendLocalInput: (sessionId: string, input: string) =>
+    ipcRenderer.send('terminal:local:input', { sessionId, input }),
+  stopLocalSession: (sessionId: string) =>
+    ipcRenderer.invoke('terminal:local:stop', { sessionId }),
+  resizeLocalSession: (sessionId: string, cols: number, rows: number) =>
+    ipcRenderer.send('terminal:local:resize', { sessionId, cols, rows }),
   onData: (
     listener: (payload: { sessionId: string; data: string }) => void
   ) => {
@@ -61,5 +68,37 @@ contextBridge.exposeInMainWorld('terminal', {
     ) => listener(payload);
     ipcRenderer.on('terminal:error', handler);
     return () => ipcRenderer.removeListener('terminal:error', handler);
+  },
+  onLocalData: (
+    listener: (payload: { sessionId: string; data: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { sessionId: string; data: string }
+    ) => listener(payload);
+    ipcRenderer.on('terminal:local:data', handler);
+    return () => ipcRenderer.removeListener('terminal:local:data', handler);
+  },
+  onLocalClosed: (
+    listener: (
+      payload: { sessionId: string; code: number | null; signal: number | null }
+    ) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { sessionId: string; code: number | null; signal: number | null }
+    ) => listener(payload);
+    ipcRenderer.on('terminal:local:closed', handler);
+    return () => ipcRenderer.removeListener('terminal:local:closed', handler);
+  },
+  onLocalError: (
+    listener: (payload: { sessionId: string; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { sessionId: string; message: string }
+    ) => listener(payload);
+    ipcRenderer.on('terminal:local:error', handler);
+    return () => ipcRenderer.removeListener('terminal:local:error', handler);
   }
 });
