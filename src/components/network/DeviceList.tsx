@@ -36,7 +36,7 @@ const DeviceList = ({ devices }: DeviceListProps) => {
                 <span className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-500/10 px-3 py-1 lg:me-[8em] me-[4em] text-xs font-semibold uppercase tracking-wide text-emerald-300 sm:self-auto">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" /> ssh Available
                 </span>
-                <Link to={`/device-registration/${device.ip}`} className="focus:outline-none text-emerald-400 hover:text-white bg-transparent border border-emerald-600 hover:bg-emerald-600 font-medium rounded-lg text-sm px-4 py-2 ">
+                <Link to={`/device-registration/${device.ip}`} className="focus:outline-none text-emerald-400 hover:text-white bg-transparent border border-emerald-600 hover:bg-emerald-600 font-medium rounded-lg text-sm px-3 py-1.5 ">
                   Register
                 </Link>
               </div>

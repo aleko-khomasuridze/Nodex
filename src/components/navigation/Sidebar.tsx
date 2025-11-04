@@ -19,7 +19,7 @@ export type SidebarProps = {
 const Sidebar = ({ collapsed, navigationItems, onToggleCollapse }: SidebarProps) => {
   return (
     <aside
-      className={`flex flex-col border-r border-slate-900/70 bg-slate-950/80 backdrop-blur transition-all duration-200 ${
+      className={`max-h-screen flex flex-col border-r border-slate-900/70 bg-slate-950/80 backdrop-blur transition-all duration-200 ${
         collapsed ? 'w-16.5' : 'w-64'
       }`}
     >
