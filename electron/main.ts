@@ -142,10 +142,10 @@ const registerTerminalHandlers = (
       await sessionManager.stopSession(sessionId);
     }
   );
-  ipcMain.handle('terminal:start-local', (event) => {
+  ipcMain.handle('terminal:start-local', async (event) => {
+    const webContents = event.sender;
     try {
-      const webContents = event.sender;
-      return localShellManager.startSession({
+      return await localShellManager.startSession({
         onData: (sessionId, chunk) => {
           webContents.send('terminal:local:data', { sessionId, data: chunk });
         },
