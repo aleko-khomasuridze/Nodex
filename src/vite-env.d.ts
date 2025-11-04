@@ -25,6 +25,22 @@ declare global {
       ) => Promise<import('./types/device').RegisteredDevice>;
       remove: (id: string) => Promise<void>;
     };
+    terminal?: {
+      startSession: (deviceId: string) => Promise<{ sessionId: string }>;
+      sendInput: (sessionId: string, input: string) => void;
+      stopSession: (sessionId: string) => Promise<void>;
+      onData: (
+        listener: (payload: { sessionId: string; data: string }) => void
+      ) => () => void;
+      onClosed: (
+        listener: (
+          payload: { sessionId: string; code: number | null; signal: string | null }
+        ) => void
+      ) => () => void;
+      onError: (
+        listener: (payload: { sessionId: string; message: string }) => void
+      ) => () => void;
+    };
   }
 }
 
