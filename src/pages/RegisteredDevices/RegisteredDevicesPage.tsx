@@ -182,7 +182,7 @@ const RegisteredDevicesPage = () => {
           ) : null}
 
           {!isLoading && devices.length > 0 ? (
-            <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
+            <ul className="divide-y divide-slate-800 overflow-visible rounded-2xl border border-slate-800 bg-slate-900/60">
               {devices.map((device) => {
                 const label = device.alias ?? device.hostname ?? device.ip;
                 return (
