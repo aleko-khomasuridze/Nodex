@@ -152,7 +152,7 @@ const DeviceEditPage = () => {
       await window.devices.update(id, updates);
       setStatus({ isSubmitting: false, error: null, success: true });
       setTimeout(() => {
-        navigate(`/available-devices/${id}`);
+        navigate(`/registered-devices/${id}`);
       }, 500);
     } catch (error: unknown) {
       setStatus({
@@ -243,7 +243,7 @@ const DeviceEditPage = () => {
             </div>
             <div className="md:col-span-2">
               <Link
-                to={id ? `/available-devices/${id}` : "/available-devices"}
+                to={id ? `/registered-devices/${id}` : "/registered-devices"}
                 className="flex w-full items-center justify-center rounded-lg bg-slate-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-500"
               >
                 Cancel

@@ -136,7 +136,7 @@ const DeviceRegistration = () => {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       setStatus({ isSubmitting: false, error: null, success: true });
       setTimeout(() => {
-        navigate("/available-devices");
+        navigate("/registered-devices");
       }, 500);
     } catch (error: unknown) {
       setStatus({
