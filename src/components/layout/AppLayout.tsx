@@ -16,14 +16,14 @@ const AppLayout = ({ navigationItems }: AppLayoutProps) => {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex h-full min-h-screen bg-slate-950 text-slate-100">
       <Sidebar
         collapsed={isCollapsed}
         navigationItems={navigationItems}
         onToggleCollapse={() => setIsCollapsed((current) => !current)}
       />
 
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex h-full flex-1 flex-col overflow-hidden">
         <header className="flex items-center justify-between border-b border-slate-900/80 bg-slate-950/80 px-6 py-4 backdrop-blur">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -35,10 +35,12 @@ const AppLayout = ({ navigationItems }: AppLayoutProps) => {
           </div>
         </header>
 
-        <section className="flex-1 overflow-y-auto bg-slate-950">
-          <Outlet />
-        </section>
-      </main>
+        <main className="flex min-h-0 flex-1 flex-col">
+          <section className="flex-1 overflow-y-auto bg-slate-950 min-h-0">
+            <Outlet />
+          </section>
+        </main>
+      </div>
     </div>
   );
 };
