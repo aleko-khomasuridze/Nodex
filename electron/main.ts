@@ -5,6 +5,7 @@ import { JsonDeviceRepository } from './backend/devices/JsonDeviceRepository';
 import { DeviceController } from './backend/devices/DeviceController';
 import { DeviceValidationError } from './backend/devices/DeviceValidation';
 import { SshSessionManager } from './backend/terminal/SshSessionManager';
+import { LocalShellManager } from './backend/terminal/LocalShellManager';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -63,7 +64,8 @@ const registerDeviceHandlers = (controller: DeviceController) => {
 
 const registerTerminalHandlers = (
   controller: DeviceController,
-  sessionManager: SshSessionManager
+  sessionManager: SshSessionManager,
+  localShellManager: LocalShellManager
 ) => {
   ipcMain.handle(
     'terminal:start',
@@ -140,6 +142,77 @@ const registerTerminalHandlers = (
       await sessionManager.stopSession(sessionId);
     }
   );
+  ipcMain.handle('terminal:start-local', (event) => {
+    try {
+      const webContents = event.sender;
+      return localShellManager.startSession({
+        onData: (sessionId, chunk) => {
+          webContents.send('terminal:local:data', { sessionId, data: chunk });
+        },
+        onError: (sessionId, error) => {
+          webContents.send('terminal:local:error', {
+            sessionId,
+            message: error.message
+          });
+        },
+        onClose: (sessionId, details) => {
+          webContents.send('terminal:local:closed', {
+            sessionId,
+            code: details.code,
+            signal: details.signal
+          });
+        }
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
+      throw error;
+    }
+  });
+
+  ipcMain.on(
+    'terminal:local:input',
+    (event, payload: { sessionId?: string; input?: string }) => {
+      const { sessionId, input } = payload ?? {};
+      if (!sessionId || typeof input !== 'string') {
+        return;
+      }
+      try {
+        localShellManager.sendInput(sessionId, input);
+      } catch (error: unknown) {
+        event.sender.send('terminal:local:error', {
+          sessionId,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Unable to send data to the local terminal session.'
+        });
+      }
+    }
+  );
+
+  ipcMain.on(
+    'terminal:local:resize',
+    (_event, payload: { sessionId?: string; cols?: number; rows?: number }) => {
+      const { sessionId, cols, rows } = payload ?? {};
+      if (!sessionId || typeof cols !== 'number' || typeof rows !== 'number') {
+        return;
+      }
+      localShellManager.resize(sessionId, cols, rows);
+    }
+  );
+
+  ipcMain.handle(
+    'terminal:local:stop',
+    async (_event, payload: { sessionId?: string }): Promise<void> => {
+      const { sessionId } = payload ?? {};
+      if (!sessionId) {
+        return;
+      }
+      localShellManager.stopSession(sessionId);
+    }
+  );
 };
 
 async function createWindow() {
@@ -184,7 +257,8 @@ app.whenReady().then(async () => {
   const deviceController = createDeviceController();
   registerDeviceHandlers(deviceController);
   const terminalManager = new SshSessionManager();
-  registerTerminalHandlers(deviceController, terminalManager);
+  const localShellManager = new LocalShellManager();
+  registerTerminalHandlers(deviceController, terminalManager, localShellManager);
 
   await createWindow();
 
