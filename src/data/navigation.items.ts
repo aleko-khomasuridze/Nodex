@@ -17,15 +17,15 @@ const navigationItems: NavigationItem[] = [
     icon: RiRadarLine
   },
   {
-    id: 'available-devices',
-    label: 'Available Devices',
+    id: 'registered-devices',
+    label: 'Registered Devices',
     // description: 'Welcome to the Nodex toolkit.',
-    path: '/available-devices',
+    path: '/registered-devices',
     icon: RiDeviceLine
   },
   {
     id: 'terminal',
-    label: 'SSH Guide',
+    label: 'Terminal',
     // description: 'Welcome to the Nodex toolkit.',
     path: '/terminal',
     icon: RiTerminalBoxLine

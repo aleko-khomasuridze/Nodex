@@ -57,19 +57,23 @@ const TerminalPage = () => {
     return base;
   }, [device]);
 
+  const deviceLabel = useMemo(
+    () => device?.alias ?? device?.hostname ?? device?.ip ?? "your device",
+    [device]
+  );
+
   return (
-    <main className="flex-1 overflow-y-scroll min-h-screen bg-slate-950 py-[4em] px-4">
+    <main className="flex-1 overflow-y-scroll min-h-screen bg-[#050815] py-[4em] px-4">
       <section className="flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
+        <div className="flex flex-1 flex-col gap-6 rounded-3xl border border-slate-800/70 bg-gradient-to-br from-[#0a0f1f] via-[#050815] to-[#0a0f1f] p-8 shadow-[0_0_60px_rgba(16,185,129,0.08)]">
           <header className="flex flex-col gap-2 text-center md:text-left">
-            <p className="text-sm uppercase tracking-widest text-emerald-400">
-              SSH Connection
+            <p className="text-sm uppercase tracking-[0.45em] text-emerald-400/80">
+              Terminal
             </p>
             <h1 className="text-3xl font-semibold text-white">
-              {device?.alias ??
-                device?.hostname ??
-                device?.ip ??
-                "Connect from your terminal"}
+              {deviceLabel === "your device"
+                ? "Connect from your terminal"
+                : `SSH into ${deviceLabel}`}
             </h1>
             <p className="text-sm text-slate-400">
               {id
@@ -82,9 +86,9 @@ const TerminalPage = () => {
             <button
               type="button"
               className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
-              onClick={() => navigate("/available-devices")}
+              onClick={() => navigate("/registered-devices")}
             >
-              Back to devices
+              Back to registered devices
             </button>
           </div>
 
@@ -102,9 +106,9 @@ const TerminalPage = () => {
 
           {!isLoading ? (
             <div className="flex flex-1 flex-col gap-6">
-              <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+              <section className="rounded-2xl border border-slate-800/70 bg-[#070d1a]/70 p-6 backdrop-blur">
                 <h2 className="text-lg font-semibold text-white">
-                  Connect using your operating system
+                  Launch your session
                 </h2>
                 <p className="mt-3 text-sm text-slate-300">
                   Open your preferred terminal application (Command Prompt,
@@ -112,12 +116,43 @@ const TerminalPage = () => {
                   command below. Replace any placeholder values with the
                   appropriate credentials for your environment.
                 </p>
-                <div className="mt-4 rounded-xl border border-slate-700 bg-black/70 p-4 font-mono text-sm text-emerald-100">
-                  <code>{sshCommand}</code>
+                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-800/80 bg-[#050b19] shadow-[0_30px_60px_-30px_rgba(16,185,129,0.45)]">
+                  <div className="flex items-center justify-between border-b border-slate-800/70 bg-[#0f1a2b]/80 px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-red-500/80" />
+                      <span className="h-3 w-3 rounded-full bg-amber-400/80" />
+                      <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
+                    </div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Terminal
+                    </p>
+                    <span className="text-[10px] font-mono uppercase tracking-wide text-slate-500">
+                      bash
+                    </span>
+                  </div>
+                  <div className="space-y-3 bg-[#030712]/95 px-5 py-6 font-mono text-sm text-slate-100">
+                    <p className="flex flex-wrap items-center gap-x-2">
+                      <span className="text-slate-500">➜</span>
+                      <span className="text-emerald-400"> nodex</span>
+                      <span className="text-slate-500"> %</span>
+                      <span className="text-emerald-300"> {sshCommand}</span>
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-600">
+                      press enter ↵
+                    </p>
+                    <p className="text-emerald-400/90">
+                      {`Connecting to ${deviceLabel}...`}
+                    </p>
+                    <p className="text-slate-400">
+                      {device
+                        ? `Device ready on port ${device.port ?? 22}. Username ${device.username ?? "{username}"}.`
+                        : "Use the Registered Devices view to choose a device and auto-fill this command."}
+                    </p>
+                  </div>
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+              <section className="rounded-2xl border border-slate-800/70 bg-[#070d1a]/70 p-6 backdrop-blur">
                 <h3 className="text-base font-semibold text-white">
                   Quick reference
                 </h3>
@@ -159,9 +194,7 @@ const TerminalPage = () => {
                 <p className="mt-4 text-xs text-slate-400">
                   Tip: If your SSH server uses private key authentication,
                   include the{" "}
-                  <code className="rounded bg-slate-800 px-1">
-                    -i /path/to/private-key
-                  </code>{" "}
+                  <code className="rounded bg-slate-800 px-1">-i /path/to/private-key</code>{" "}
                   flag when running the command.
                 </p>
               </section>

@@ -79,7 +79,7 @@ const DeviceDetailsPage = () => {
             {device ? (
               <>
                 <Link
-                  to={`/available-devices/${device.id}/edit`}
+                  to={`/registered-devices/${device.id}/edit`}
                   className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
                 >
                   Edit

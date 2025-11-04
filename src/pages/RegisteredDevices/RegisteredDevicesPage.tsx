@@ -10,7 +10,7 @@ const formatTimestamp = (value: string) => {
   return date.toLocaleString();
 };
 
-const AvailableDevicesPage = () => {
+const RegisteredDevicesPage = () => {
   const [devices, setDevices] = useState<RegisteredDevice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,13 +180,13 @@ const AvailableDevicesPage = () => {
                     </div>
                     <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
                       <Link
-                        to={`/available-devices/${device.id}`}
+                        to={`/registered-devices/${device.id}`}
                         className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
                       >
                         View
                       </Link>
                       <Link
-                        to={`/available-devices/${device.id}/edit`}
+                        to={`/registered-devices/${device.id}/edit`}
                         className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
                       >
                         Edit
@@ -218,4 +218,4 @@ const AvailableDevicesPage = () => {
   );
 };
 
-export default AvailableDevicesPage;
+export default RegisteredDevicesPage;
