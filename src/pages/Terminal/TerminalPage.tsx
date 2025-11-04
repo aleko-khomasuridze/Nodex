@@ -29,6 +29,7 @@ const TerminalPage = () => {
   const remoteSessionIdRef = useRef<string | null>(null);
   const localSessionIdRef = useRef<string | null>(null);
   const activeTerminalRef = useRef<TerminalMode | null>(null);
+  const hasUserSelectedPanelRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<XtermTerminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -262,16 +263,20 @@ const TerminalPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!activeTerminal) {
-      if (id) {
-        setSelectedPanel("remote");
-      } else {
-        setSelectedPanel("local");
-      }
+    if (activeTerminal) {
+      setSelectedPanel(activeTerminal);
+      hasUserSelectedPanelRef.current = false;
       return;
     }
-    setSelectedPanel(activeTerminal);
+
+    if (!hasUserSelectedPanelRef.current) {
+      setSelectedPanel(id ? "remote" : "local");
+    }
   }, [activeTerminal, id]);
+
+  useEffect(() => {
+    hasUserSelectedPanelRef.current = false;
+  }, [id]);
 
   useEffect(() => {
     if (!activeTerminal) {
@@ -492,6 +497,11 @@ const TerminalPage = () => {
     await stopLocalSession();
   }, [stopLocalSession]);
 
+  const handleSelectPanel = useCallback((mode: TerminalMode) => {
+    hasUserSelectedPanelRef.current = true;
+    setSelectedPanel(mode);
+  }, []);
+
   const currentStatus = selectedPanel === "remote" ? remoteStatus : localStatus;
   const currentError = selectedPanel === "remote" ? remoteError : localError;
   const sessionIsActive =
@@ -513,8 +523,12 @@ const TerminalPage = () => {
     ? "relative flex-1 bg-[#030712]"
     : "relative h-[380px] bg-[#030712]/95";
 
+  const mainClasses = isFullscreen
+    ? "flex-1 min-h-screen bg-[#050815] py-[4em] px-4 overflow-hidden"
+    : "flex-1 min-h-screen bg-[#050815] py-[4em] px-4 overflow-y-scroll";
+
   return (
-    <main className="flex-1 overflow-y-scroll min-h-screen bg-[#050815] py-[4em] px-4">
+    <main className={mainClasses}>
       <section className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-col gap-6 rounded-3xl border border-slate-800/70 bg-gradient-to-br from-[#0a0f1f] via-[#050815] to-[#0a0f1f] p-8 shadow-[0_0_60px_rgba(16,185,129,0.08)]">
           <header className="flex flex-col gap-2 text-center md:text-left">
@@ -567,7 +581,7 @@ const TerminalPage = () => {
                           ? "bg-emerald-500/10 text-emerald-300"
                           : "text-slate-400 hover:text-slate-200"
                       }`}
-                      onClick={() => setSelectedPanel("remote")}
+                      onClick={() => handleSelectPanel("remote")}
                       disabled={!id}
                     >
                       Remote device
@@ -579,7 +593,7 @@ const TerminalPage = () => {
                           ? "bg-emerald-500/10 text-emerald-300"
                           : "text-slate-400 hover:text-slate-200"
                       }`}
-                      onClick={() => setSelectedPanel("local")}
+                      onClick={() => handleSelectPanel("local")}
                     >
                       This device
                     </button>
