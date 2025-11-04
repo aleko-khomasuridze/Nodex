@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { RegisteredDevice } from "../../types/device";
 
@@ -15,6 +15,8 @@ const RegisteredDevicesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const navigate = useNavigate();
   const loadDevices = useCallback(async () => {
     if (!window.devices?.list) {
@@ -72,9 +74,46 @@ const RegisteredDevicesPage = () => {
   const handleOpenInstructions = useCallback(
     (id: string) => {
       navigate(`/terminal/${id}`);
+      setOpenMenuId(null);
     },
     [navigate]
   );
+
+  useEffect(() => {
+    if (!openMenuId) {
+      return;
+    }
+
+    const handleClickAway = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      const container = menuRefs.current.get(openMenuId);
+      if (container && target && !container.contains(target)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickAway);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickAway);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [openMenuId]);
+
+  const toggleMenu = useCallback((id: string) => {
+    setOpenMenuId((current) => (current === id ? null : id));
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setOpenMenuId(null);
+  }, []);
 
   return (
     <main className="flex-1 overflow-y-scroll min-h-screen bg-slate-950 py-[4em]">
@@ -178,34 +217,79 @@ const RegisteredDevicesPage = () => {
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
-                      <Link
-                        to={`/registered-devices/${device.id}`}
-                        className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        to={`/registered-devices/${device.id}/edit`}
-                        className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
-                      >
-                        Edit
-                      </Link>
+                    <div
+                      className="relative self-start md:self-auto"
+                      ref={(node) => {
+                        if (node) {
+                          menuRefs.current.set(device.id, node);
+                        } else {
+                          menuRefs.current.delete(device.id);
+                        }
+                      }}
+                    >
                       <button
                         type="button"
-                        onClick={() => handleOpenInstructions(device.id)}
-                        className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuId === device.id}
+                        onClick={() => toggleMenu(device.id)}
+                        className="inline-flex items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 p-2 text-slate-300 transition hover:border-emerald-500 hover:text-white"
                       >
-                        Connection steps
+                        <span className="sr-only">Open actions</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-5 w-5"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM12 13.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM13.5 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                        </svg>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleRemove(device.id)}
-                        disabled={removingId === device.id}
-                        className="rounded-lg border border-red-500 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {removingId === device.id ? "Removing..." : "Remove"}
-                      </button>
+
+                      {openMenuId === device.id ? (
+                        <div
+                          role="menu"
+                          aria-label={`${label} actions`}
+                          className="absolute right-0 z-20 mt-2 w-52 origin-top-right overflow-hidden rounded-lg border border-slate-800 bg-slate-950/95 shadow-xl backdrop-blur"
+                        >
+                          <Link
+                            to={`/registered-devices/${device.id}`}
+                            onClick={closeMenu}
+                            role="menuitem"
+                            className="block px-4 py-3 text-sm text-slate-200 transition hover:bg-slate-900 hover:text-white"
+                          >
+                            View details
+                          </Link>
+                          <Link
+                            to={`/registered-devices/${device.id}/edit`}
+                            onClick={closeMenu}
+                            role="menuitem"
+                            className="block px-4 py-3 text-sm text-slate-200 transition hover:bg-slate-900 hover:text-white"
+                          >
+                            Edit device
+                          </Link>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => handleOpenInstructions(device.id)}
+                            className="flex w-full px-4 py-3 text-left text-sm text-emerald-300 transition hover:bg-slate-900 hover:text-emerald-200"
+                          >
+                            Connection steps
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              void handleRemove(device.id);
+                              closeMenu();
+                            }}
+                            disabled={removingId === device.id}
+                            className="flex w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-slate-900 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {removingId === device.id ? "Removing..." : "Remove"}
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </li>
                 );

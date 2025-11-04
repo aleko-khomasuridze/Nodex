@@ -3,11 +3,6 @@ import type { ClientChannel } from 'ssh2';
 import { Client } from 'ssh2';
 import type { DeviceRecord } from '../devices/Device';
 
-const ESC = String.fromCharCode(0x1b);
-const CSI = String.fromCharCode(0x9b);
-const BEL = String.fromCharCode(0x07);
-const STRING_TERMINATOR = `${ESC}\\`;
-
 interface SessionHandlers {
   onData: (sessionId: string, chunk: string) => void;
   onError: (sessionId: string, error: Error) => void;
@@ -20,7 +15,6 @@ interface SessionHandlers {
 interface ActiveSession {
   connection: Client;
   stream: ClientChannel;
-  pendingControlSequence: string;
 }
 
 export class SshSessionManager {
@@ -61,24 +55,11 @@ export class SshSessionManager {
               sessionId = randomUUID();
               this.sessions.set(sessionId, {
                 connection,
-                stream,
-                pendingControlSequence: ''
+                stream
               });
 
               stream.on('data', (chunk: Buffer) => {
-                const session = this.sessions.get(sessionId!);
-                if (!session) {
-                  return;
-                }
-
-                const combined =
-                  session.pendingControlSequence + chunk.toString('utf-8');
-                const { sanitized, pending } = this.removeControlSequences(combined);
-                session.pendingControlSequence = pending;
-
-                if (sanitized.length > 0) {
-                  handlers.onData(sessionId!, sanitized);
-                }
+                handlers.onData(sessionId!, chunk.toString('utf-8'));
               });
 
             stream.on('close', (code: number | null, signal: string | null) => {
@@ -150,51 +131,5 @@ export class SshSessionManager {
     session.stream.end();
     session.connection.end();
     this.sessions.delete(sessionId);
-  }
-
-  private removeControlSequences(
-    input: string
-  ): { sanitized: string; pending: string } {
-    let buffer = input;
-    let pending = '';
-
-    const ansiPattern =
-      /[\u001B\u009B][[\]()#;?]*(?:(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[\u0007A-PR-TZcf-ntqry=><~]|\u001B\][^\u0007]*(?:\u0007|\u001B\\))/g;
-
-    buffer = buffer.replace(ansiPattern, '');
-
-    const lastEscapeIndex = Math.max(buffer.lastIndexOf(ESC), buffer.lastIndexOf(CSI));
-    if (lastEscapeIndex !== -1) {
-      const fragment = buffer.slice(lastEscapeIndex);
-      if (this.isIncompleteSequence(fragment)) {
-        pending = fragment;
-        buffer = buffer.slice(0, lastEscapeIndex);
-      }
-    }
-
-    return { sanitized: buffer, pending };
-  }
-
-  private isIncompleteSequence(fragment: string): boolean {
-    if (!fragment) {
-      return false;
-    }
-
-    if (fragment === ESC || fragment === CSI) {
-      return true;
-    }
-
-    if (fragment.startsWith(`${ESC}[`) || fragment.startsWith(CSI)) {
-      const lastCharCode = fragment.charCodeAt(fragment.length - 1);
-      const isTerminated =
-        (lastCharCode >= 0x40 && lastCharCode <= 0x7e) || lastCharCode === BEL.charCodeAt(0);
-      return !isTerminated;
-    }
-
-    if (fragment.startsWith(`${ESC}]`)) {
-      return !fragment.includes(BEL) && !fragment.endsWith(STRING_TERMINATOR);
-    }
-
-    return false;
   }
 }
