@@ -15,7 +15,7 @@ const DeviceList = ({ devices }: DeviceListProps) => {
   }
 
   return (
-    <section className="space-y-4">
+    <div className="space-y-4">
       <h3 className="text-lg font-semibold text-slate-200">
         {devices.length} device{devices.length === 1 ? '' : 's'} ready for SSH
       </h3>
@@ -44,7 +44,7 @@ const DeviceList = ({ devices }: DeviceListProps) => {
           );
         })}
       </ul>
-    </section>
+    </div>
   );
 };
 
