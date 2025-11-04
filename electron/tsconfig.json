@@ -9,5 +9,5 @@
     "strict": true,
     "lib": ["ESNext", "DOM"]
   },
-  "include": ["./**/*.ts"]
+  "include": ["./**/*.ts", "./**/*.d.ts"]
 }

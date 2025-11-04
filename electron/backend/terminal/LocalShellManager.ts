@@ -1,6 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import type { IPty } from 'node-pty';
-import { spawn } from 'node-pty';
+
+const loadNodePty = () =>
+  import('node-pty').catch((error) => {
+    const message =
+      'The "node-pty" module is required to launch a local terminal session. ' +
+      'Please ensure it is installed and that native dependencies are built for your platform.';
+    if (error instanceof Error) {
+      throw new Error(`${message} Original error: ${error.message}`);
+    }
+    throw new Error(message);
+  });
 
 type SessionHandlers = {
   onData: (sessionId: string, chunk: string) => void;
@@ -22,7 +32,8 @@ const resolveShell = () => {
 export class LocalShellManager {
   private readonly sessions = new Map<string, ShellSession>();
 
-  startSession(handlers: SessionHandlers): { sessionId: string } {
+  async startSession(handlers: SessionHandlers): Promise<{ sessionId: string }> {
+    const { spawn } = await loadNodePty();
     const shell = resolveShell();
     const cols = 80;
     const rows = 30;
