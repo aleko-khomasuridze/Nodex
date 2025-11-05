@@ -1,16 +1,5 @@
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import type { IPty } from 'node-pty';
-
-const loadNodePty = () =>
-  import('node-pty').catch((error) => {
-    const message =
-      'The "node-pty" module is required to launch a local terminal session. ' +
-      'Please ensure it is installed and that native dependencies are built for your platform.';
-    if (error instanceof Error) {
-      throw new Error(`${message} Original error: ${error.message}`);
-    }
-    throw new Error(message);
-  });
 
 type SessionHandlers = {
   onData: (sessionId: string, chunk: string) => void;
@@ -19,7 +8,7 @@ type SessionHandlers = {
 };
 
 type ShellSession = {
-  pty: IPty;
+  process: ChildProcessWithoutNullStreams;
 };
 
 const resolveShell = () => {
@@ -33,15 +22,8 @@ export class LocalShellManager {
   private readonly sessions = new Map<string, ShellSession>();
 
   async startSession(handlers: SessionHandlers): Promise<{ sessionId: string }> {
-    const { spawn } = await loadNodePty();
     const shell = resolveShell();
-    const cols = 80;
-    const rows = 30;
-
-    const ptyProcess = spawn(shell, [], {
-      name: 'xterm-color',
-      cols,
-      rows,
+    const child = spawn(shell, [], {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -50,20 +32,28 @@ export class LocalShellManager {
     });
 
     const sessionId = randomUUID();
-    this.sessions.set(sessionId, { pty: ptyProcess });
+    this.sessions.set(sessionId, { process: child });
 
-    ptyProcess.onData((chunk) => {
-      handlers.onData(sessionId, chunk);
+    child.stdout.setEncoding('utf-8');
+    child.stderr.setEncoding('utf-8');
+
+    const handleChunk = (chunk: string | Buffer) => {
+      handlers.onData(sessionId, chunk.toString());
+    };
+
+    child.stdout.on('data', handleChunk);
+    child.stderr.on('data', handleChunk);
+
+    child.once('error', (error) => {
+      this.sessions.delete(sessionId);
+      handlers.onError(sessionId, error);
     });
 
-    ptyProcess.onExit(({ exitCode, signal }) => {
+    child.once('close', (code, signal) => {
       this.sessions.delete(sessionId);
       handlers.onClose(sessionId, {
-        code: typeof exitCode === 'number' ? exitCode : null,
-        signal:
-          typeof signal === 'number'
-            ? String(signal)
-            : signal ?? null
+        code: typeof code === 'number' ? code : null,
+        signal: signal ?? null
       });
     });
 
@@ -75,15 +65,14 @@ export class LocalShellManager {
     if (!session) {
       throw new Error('Unable to locate the local terminal session.');
     }
-    session.pty.write(input);
+    if (session.process.stdin.destroyed) {
+      throw new Error('Unable to send input: the local terminal session is no longer available.');
+    }
+    session.process.stdin.write(input);
   }
 
-  resize(sessionId: string, cols: number, rows: number): void {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      return;
-    }
-    session.pty.resize(cols, rows);
+  resize(_sessionId: string, _cols: number, _rows: number): void {
+    // Resizing is not supported when using a standard child process.
   }
 
   stopSession(sessionId: string): void {
@@ -91,7 +80,7 @@ export class LocalShellManager {
     if (!session) {
       return;
     }
-    session.pty.kill();
+    session.process.kill();
     this.sessions.delete(sessionId);
   }
 }
