@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
-import type { DeviceCreateInput, DeviceRecord, DeviceUpdateInput } from './Device';
-import type { DeviceRepository } from './DeviceRepository';
+import type {
+  DeviceCreateInput,
+  DeviceRecord,
+  DeviceUpdateInput
+} from '../../domain/devices/Device';
+import type { DeviceRepository } from '../../domain/devices/DeviceRepository';
 
 interface DeviceFileSchema {
   version: number;

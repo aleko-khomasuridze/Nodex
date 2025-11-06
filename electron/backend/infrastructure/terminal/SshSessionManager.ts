@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ClientChannel } from 'ssh2';
 import { Client } from 'ssh2';
-import type { DeviceRecord } from '../devices/Device';
+import type { DeviceRecord } from '../../domain/devices/Device';
 
 interface SessionHandlers {
   onData: (sessionId: string, chunk: string) => void;
@@ -62,35 +62,35 @@ export class SshSessionManager {
                 handlers.onData(sessionId!, chunk.toString('utf-8'));
               });
 
-            stream.on('close', (code: number | null, signal: string | null) => {
-              if (sessionId) {
-                this.sessions.delete(sessionId);
-              }
-              handlers.onClose(sessionId ?? '', { code, signal });
-              connection.end();
-            });
-
-            stream.on('error', (streamError: Error) => {
-              if (sessionId) {
-                handlers.onError(sessionId, streamError);
-              }
-            });
-
-            connection.on('error', (connectionError: Error) => {
-              if (!sessionId) {
-                if (!isSettled) {
-                  isSettled = true;
-                  reject(connectionError);
+              stream.on('close', (code: number | null, signal: string | null) => {
+                if (sessionId) {
+                  this.sessions.delete(sessionId);
                 }
-                return;
-              }
-              handlers.onError(sessionId, connectionError);
-            });
+                handlers.onClose(sessionId ?? '', { code, signal });
+                connection.end();
+              });
 
-            if (!isSettled) {
-              isSettled = true;
-              resolve({ sessionId });
-            }
+              stream.on('error', (streamError: Error) => {
+                if (sessionId) {
+                  handlers.onError(sessionId, streamError);
+                }
+              });
+
+              connection.on('error', (connectionError: Error) => {
+                if (!sessionId) {
+                  if (!isSettled) {
+                    isSettled = true;
+                    reject(connectionError);
+                  }
+                  return;
+                }
+                handlers.onError(sessionId, connectionError);
+              });
+
+              if (!isSettled) {
+                isSettled = true;
+                resolve({ sessionId });
+              }
             }
           );
         })
