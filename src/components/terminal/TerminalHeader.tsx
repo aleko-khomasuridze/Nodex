@@ -1,7 +1,7 @@
 interface TerminalHeaderProps {
   title: string;
   subtitle: string;
-  onNavigateBack: () => void;
+  onNavigateBack?: () => void;
 }
 
 const TerminalHeader = ({ title, subtitle, onNavigateBack }: TerminalHeaderProps) => (
@@ -14,15 +14,17 @@ const TerminalHeader = ({ title, subtitle, onNavigateBack }: TerminalHeaderProps
       <p className="text-sm text-slate-400">{subtitle}</p>
     </header>
 
-    <div className="flex flex-wrap gap-3">
-      <button
-        type="button"
-        className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
-        onClick={onNavigateBack}
-      >
-        Back to registered devices
-      </button>
-    </div>
+    {onNavigateBack ? (
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
+          onClick={onNavigateBack}
+        >
+          Back to registered devices
+        </button>
+      </div>
+    ) : null}
   </>
 );
 

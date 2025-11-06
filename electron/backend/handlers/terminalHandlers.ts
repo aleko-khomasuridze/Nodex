@@ -86,27 +86,30 @@ export const registerTerminalHandlers = (
     }
   );
 
-  ipcMain.handle('terminal:start-local', async (event) => {
+  ipcMain.handle('terminal:start-local', async (event, payload?: { cwd?: string }) => {
     const webContents = event.sender;
     try {
-      return await localShellManager.startSession({
-        onData: (sessionId, chunk) => {
-          webContents.send('terminal:local:data', { sessionId, data: chunk });
+      return await localShellManager.startSession(
+        {
+          onData: (sessionId, chunk) => {
+            webContents.send('terminal:local:data', { sessionId, data: chunk });
+          },
+          onError: (sessionId, error) => {
+            webContents.send('terminal:local:error', {
+              sessionId,
+              message: error.message
+            });
+          },
+          onClose: (sessionId, details) => {
+            webContents.send('terminal:local:closed', {
+              sessionId,
+              code: details.code,
+              signal: details.signal
+            });
+          }
         },
-        onError: (sessionId, error) => {
-          webContents.send('terminal:local:error', {
-            sessionId,
-            message: error.message
-          });
-        },
-        onClose: (sessionId, details) => {
-          webContents.send('terminal:local:closed', {
-            sessionId,
-            code: details.code,
-            signal: details.signal
-          });
-        }
-      });
+        payload ?? {}
+      );
     } catch (error: unknown) {
       if (error instanceof Error) {
         throw new Error(error.message);

@@ -29,7 +29,7 @@ declare global {
       startSession: (deviceId: string) => Promise<{ sessionId: string }>;
       sendInput: (sessionId: string, input: string) => void;
       stopSession: (sessionId: string) => Promise<void>;
-      startLocalSession: () => Promise<{ sessionId: string }>;
+      startLocalSession: (options?: { cwd?: string }) => Promise<{ sessionId: string }>;
       sendLocalInput: (sessionId: string, input: string) => void;
       stopLocalSession: (sessionId: string) => Promise<void>;
       resizeLocalSession: (sessionId: string, cols: number, rows: number) => void;

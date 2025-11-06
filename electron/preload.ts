@@ -30,7 +30,8 @@ contextBridge.exposeInMainWorld('terminal', {
     ipcRenderer.send('terminal:input', { sessionId, input }),
   stopSession: (sessionId: string) =>
     ipcRenderer.invoke('terminal:stop', { sessionId }),
-  startLocalSession: () => ipcRenderer.invoke('terminal:start-local'),
+  startLocalSession: (options?: { cwd?: string }) =>
+    ipcRenderer.invoke('terminal:start-local', options),
   sendLocalInput: (sessionId: string, input: string) =>
     ipcRenderer.send('terminal:local:input', { sessionId, input }),
   stopLocalSession: (sessionId: string) =>

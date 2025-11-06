@@ -23,7 +23,7 @@ const App = () => {
         <Route path="/registered-devices" element={<RegisteredDevicesPage />} />
         <Route path="/registered-devices/:id" element={<DeviceDetailsPage />} />
         <Route path="/registered-devices/:id/edit" element={<DeviceEditPage />} />
-        <Route path="/terminal" element={<TerminalPage />} />
+        <Route path="/terminal" element={<TerminalPage autoStartLocal autoFullscreen />} />
         <Route path="/terminal/:id" element={<TerminalPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate replace to="/" />} />

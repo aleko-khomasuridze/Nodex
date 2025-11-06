@@ -1,6 +1,6 @@
 import type { ChangeEvent, FormEventHandler } from "react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { NetworkDevice } from "../../components/network/DeviceList";
 import FormInput from "../../components/form/FormInput";
 import type { DeviceRegistrationPayload } from "../../types/device";
@@ -227,8 +227,12 @@ const DeviceRegistration = () => {
               </button>
             </div>
             <div className="md:col-span-2">
-              <button className="w-full rounded-lg bg-slate-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-500 focus:outline-none focus:ring-4 ">
-                <Link to="/network-scan">Cancel</Link>
+              <button
+                type="button"
+                onClick={() => navigate("/network-scan")}
+                className="w-full rounded-lg bg-slate-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-500 focus:outline-none focus:ring-4"
+              >
+                Cancel
               </button>
             </div>
           </form>
