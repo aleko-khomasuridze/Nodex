@@ -1,5 +1,6 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
+import { spawn, type IPty } from '@vscode/node-pty';
 
 type SessionHandlers = {
   onData: (sessionId: string, chunk: string) => void;
@@ -8,7 +9,7 @@ type SessionHandlers = {
 };
 
 type ShellSession = {
-  process: ChildProcessWithoutNullStreams;
+  process: IPty;
 };
 
 const resolveShell = () => {
@@ -24,6 +25,9 @@ export class LocalShellManager {
   async startSession(handlers: SessionHandlers): Promise<{ sessionId: string }> {
     const shell = resolveShell();
     const child = spawn(shell, [], {
+      name: 'xterm-256color',
+      cols: 80,
+      rows: 24,
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -34,26 +38,23 @@ export class LocalShellManager {
     const sessionId = randomUUID();
     this.sessions.set(sessionId, { process: child });
 
-    child.stdout.setEncoding('utf-8');
-    child.stderr.setEncoding('utf-8');
-
-    const handleChunk = (chunk: string | Buffer) => {
-      handlers.onData(sessionId, chunk.toString());
+    const handleData = (chunk: string) => {
+      handlers.onData(sessionId, chunk);
     };
 
-    child.stdout.on('data', handleChunk);
-    child.stderr.on('data', handleChunk);
+    child.onData(handleData);
 
-    child.once('error', (error) => {
+    const emitter = child as unknown as EventEmitter;
+    emitter.once('error', (error) => {
       this.sessions.delete(sessionId);
-      handlers.onError(sessionId, error);
+      handlers.onError(sessionId, error instanceof Error ? error : new Error(String(error)));
     });
 
-    child.once('close', (code, signal) => {
+    child.onExit(({ exitCode, signal }) => {
       this.sessions.delete(sessionId);
       handlers.onClose(sessionId, {
-        code: typeof code === 'number' ? code : null,
-        signal: signal ?? null
+        code: typeof exitCode === 'number' ? exitCode : null,
+        signal: signal !== undefined && signal !== null ? String(signal) : null
       });
     });
 
@@ -65,14 +66,15 @@ export class LocalShellManager {
     if (!session) {
       throw new Error('Unable to locate the local terminal session.');
     }
-    if (session.process.stdin.destroyed) {
-      throw new Error('Unable to send input: the local terminal session is no longer available.');
-    }
-    session.process.stdin.write(input);
+    session.process.write(input);
   }
 
-  resize(_sessionId: string, _cols: number, _rows: number): void {
-    // Resizing is not supported when using a standard child process.
+  resize(sessionId: string, cols: number, rows: number): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return;
+    }
+    session.process.resize(Math.max(cols, 1), Math.max(rows, 1));
   }
 
   stopSession(sessionId: string): void {
