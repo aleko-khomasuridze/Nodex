@@ -1,6 +1,10 @@
-import type { DeviceCreateInput, DeviceRecord, DeviceUpdateInput } from './Device';
-import type { DeviceRepository } from './DeviceRepository';
-import { DeviceValidationError, validateAndNormalizeInput } from './DeviceValidation';
+import type {
+  DeviceCreateInput,
+  DeviceRecord,
+  DeviceUpdateInput
+} from '../../domain/devices/Device';
+import type { DeviceRepository } from '../../domain/devices/DeviceRepository';
+import { DeviceValidationError, validateAndNormalizeInput } from '../../domain/devices/DeviceValidation';
 
 export class DeviceController {
   constructor(private readonly repository: DeviceRepository) {}
