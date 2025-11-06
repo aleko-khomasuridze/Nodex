@@ -36,7 +36,7 @@ const NetworkScanPage = () => {
         LOCAL_STORAGE_KEY,
         JSON.stringify({
           timestamp: Date.now(),
-          devices: results,
+          devices: filteredDevices,
         })
       );
     } catch (scanError) {
