@@ -217,6 +217,8 @@ const RegisteredDevicesPage = () => {
                         </p>
                       ) : null}
                     </div>
+
+                    {/* Context menu */}
                     <div
                       className="relative self-start md:self-auto"
                       ref={(node) => {
@@ -232,18 +234,10 @@ const RegisteredDevicesPage = () => {
                         aria-haspopup="menu"
                         aria-expanded={openMenuId === device.id}
                         onClick={() => toggleMenu(device.id)}
-                        className="inline-flex items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 p-2 text-slate-300 transition hover:border-emerald-500 hover:text-white"
+                        className="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900/70 h-[36px] w-[36px] text-slate-300 transition hover:border-emerald-500 hover:text-white"
                       >
                         <span className="sr-only">Open actions</span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="h-5 w-5"
-                          aria-hidden="true"
-                        >
-                          <path d="M12 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM12 13.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM13.5 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-                        </svg>
+                        <i className="ri-list-unordered"></i>
                       </button>
 
                       {openMenuId === device.id ? (
@@ -256,25 +250,28 @@ const RegisteredDevicesPage = () => {
                             to={`/registered-devices/${device.id}`}
                             onClick={closeMenu}
                             role="menuitem"
-                            className="block px-4 py-3 text-sm text-slate-200 transition hover:bg-slate-900 hover:text-white"
+                            className="flex px-4 gap-3 py-3 text-sm text-slate-200 transition hover:bg-slate-900 hover:text-white"
                           >
+                            <i className="ri-eye-line"></i>
                             View details
                           </Link>
                           <Link
                             to={`/registered-devices/${device.id}/edit`}
                             onClick={closeMenu}
                             role="menuitem"
-                            className="block px-4 py-3 text-sm text-slate-200 transition hover:bg-slate-900 hover:text-white"
+                            className="flex px-4 gap-3 py-3 text-sm text-slate-200 transition hover:bg-slate-900 hover:text-white"
                           >
+                            <i className="ri-edit-2-line"></i>
                             Edit device
                           </Link>
                           <button
                             type="button"
                             role="menuitem"
                             onClick={() => handleOpenInstructions(device.id)}
-                            className="flex w-full px-4 py-3 text-left text-sm text-emerald-300 transition hover:bg-slate-900 hover:text-emerald-200"
+                            className="flex gap-3 w-full px-4 py-3 text-left text-sm text-emerald-300 transition hover:bg-slate-900 hover:text-emerald-200"
                           >
-                            Connection steps
+                            <i className="ri-link"></i>
+                            Connect
                           </button>
                           <button
                             type="button"
@@ -284,8 +281,9 @@ const RegisteredDevicesPage = () => {
                               closeMenu();
                             }}
                             disabled={removingId === device.id}
-                            className="flex w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-slate-900 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="flex gap-3 w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-slate-900 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                           >
+                            <i className="ri-delete-bin-5-line"></i>
                             {removingId === device.id ? "Removing..." : "Remove"}
                           </button>
                         </div>
