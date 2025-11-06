@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { spawn, type IPty } from '@vscode/node-pty';
+import { spawn, type IPty } from 'node-pty-prebuilt-multiarch';
 
 type SessionHandlers = {
   onData: (sessionId: string, chunk: string) => void;
