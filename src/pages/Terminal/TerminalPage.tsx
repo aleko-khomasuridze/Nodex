@@ -12,7 +12,17 @@ import useTerminalInstance from "../../hooks/useTerminalInstance";
 import useTerminalSessionEvents from "../../hooks/useTerminalSessionEvents";
 import type { TerminalMode } from "./terminal.types";
 
-const TerminalPage = () => {
+interface TerminalPageProps {
+  showBackButton?: boolean;
+  autoStartLocal?: boolean;
+  autoFullscreen?: boolean;
+}
+
+const TerminalPage = ({
+  showBackButton = true,
+  autoStartLocal = false,
+  autoFullscreen = false,
+}: TerminalPageProps) => {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
 
@@ -32,7 +42,7 @@ const TerminalPage = () => {
 
   const [selectedPanel, setSelectedPanel] = useState<TerminalMode>(id ? "remote" : "local");
   const [activeTerminal, setActiveTerminal] = useState<TerminalMode | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(autoFullscreen);
 
   const remoteSessionIdRef = useRef<string | null>(null);
   const localSessionIdRef = useRef<string | null>(null);
@@ -301,6 +311,18 @@ const TerminalPage = () => {
     setIsFullscreen((current) => !current);
   }, []);
 
+  useEffect(() => {
+    if (!autoStartLocal || Boolean(id)) {
+      return;
+    }
+
+    if (!window.terminal?.startLocalSession) {
+      return;
+    }
+
+    void handleStartLocalSession();
+  }, [autoStartLocal, handleStartLocalSession, id]);
+
   const currentStatus = selectedPanel === "remote" ? remoteStatus : localStatus;
   const currentError = selectedPanel === "remote" ? remoteError : localError;
 
@@ -335,7 +357,11 @@ const TerminalPage = () => {
     <main className={mainClasses}>
       <section className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-col gap-6 rounded-3xl border border-slate-800/70 bg-gradient-to-br from-[#0a0f1f] via-[#050815] to-[#0a0f1f] p-8 shadow-[0_0_60px_rgba(16,185,129,0.08)]">
-          <TerminalHeader title={title} subtitle={subtitle} onNavigateBack={() => navigate("/registered-devices")} />
+          <TerminalHeader
+            title={title}
+            subtitle={subtitle}
+            onNavigateBack={showBackButton ? () => navigate("/registered-devices") : undefined}
+          />
 
           {error ? (
             <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>

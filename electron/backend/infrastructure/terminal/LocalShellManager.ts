@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { spawn, type IPty } from 'node-pty-prebuilt-multiarch';
 
 type SessionHandlers = {
@@ -19,16 +22,42 @@ const resolveShell = () => {
   return process.env.SHELL ?? '/bin/bash';
 };
 
+const resolveDefaultWorkingDirectory = () => {
+  const homeDirectory = homedir();
+
+  if (homeDirectory) {
+    const desktopDirectory = join(homeDirectory, 'Desktop');
+    if (existsSync(desktopDirectory)) {
+      return desktopDirectory;
+    }
+  }
+
+  return process.cwd();
+};
+
 export class LocalShellManager {
+  private readonly defaultWorkingDirectory: string;
   private readonly sessions = new Map<string, ShellSession>();
 
-  async startSession(handlers: SessionHandlers): Promise<{ sessionId: string }> {
+  constructor(defaultWorkingDirectory: string = resolveDefaultWorkingDirectory()) {
+    this.defaultWorkingDirectory = defaultWorkingDirectory;
+  }
+
+  async startSession(
+    handlers: SessionHandlers,
+    options: { cwd?: string } = {}
+  ): Promise<{ sessionId: string }> {
     const shell = resolveShell();
+    const requestedWorkingDirectory = options.cwd;
+    const workingDirectory =
+      requestedWorkingDirectory && existsSync(requestedWorkingDirectory)
+        ? requestedWorkingDirectory
+        : this.defaultWorkingDirectory;
     const child = spawn(shell, [], {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
-      cwd: process.cwd(),
+      cwd: workingDirectory,
       env: {
         ...process.env,
         TERM: 'xterm-256color'
