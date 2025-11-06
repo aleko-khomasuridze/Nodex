@@ -22,7 +22,14 @@ const NetworkScanPage = () => {
 
     try {
       const results = await window.networkScan.scan();
-      setDevices(results);
+      const records = await window.devices?.list();
+
+      const registered = new Set(records?.map((pre) => pre.ip));
+      const filteredDevices = results.filter(
+        (device) => !registered.has(device.ip)
+      );
+
+      setDevices(filteredDevices);
       setLastScan(new Date());
 
       localStorage.setItem(
