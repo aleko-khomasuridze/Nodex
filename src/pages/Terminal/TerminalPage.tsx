@@ -2,14 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "@xterm/xterm/css/xterm.css";
 
-import TerminalHeader from "../../components/terminal/TerminalHeader";
-import TerminalManualCommand from "../../components/terminal/TerminalManualCommand";
-import TerminalQuickReference from "../../components/terminal/TerminalQuickReference";
-import TerminalSessionSection from "../../components/terminal/TerminalSessionSection";
-import useDeviceRecord from "../../hooks/useDeviceRecord";
 import useFullscreenBehavior from "../../hooks/useFullscreenBehavior";
 import useTerminalInstance from "../../hooks/useTerminalInstance";
 import useTerminalSessionEvents from "../../hooks/useTerminalSessionEvents";
+import type { RegisteredDevice } from "../../types/device";
 import type { TerminalMode } from "./terminal.types";
 
 interface TerminalPageProps {
@@ -26,13 +22,16 @@ const TerminalPage = ({
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
 
-  const { device, error, isLoading } = useDeviceRecord(id);
+  const [devices, setDevices] = useState<RegisteredDevice[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
+  const [deviceListError, setDeviceListError] = useState<string | null>(null);
 
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [remoteStatus, setRemoteStatus] = useState<string>("Session idle");
   const [isStartingRemote, setIsStartingRemote] = useState<boolean>(false);
   const [isStoppingRemote, setIsStoppingRemote] = useState<boolean>(false);
-  const [activeRemoteSessionId, setActiveRemoteSessionId] = useState<string | null>(null);
+  const [activeRemoteSessionId, setActiveRemoteSessionIdState] = useState<string | null>(null);
+  const [activeRemoteDeviceId, setActiveRemoteDeviceId] = useState<string | null>(null);
 
   const [localError, setLocalError] = useState<string | null>(null);
   const [localStatus, setLocalStatus] = useState<string>("Session idle");
@@ -40,20 +39,25 @@ const TerminalPage = ({
   const [isStoppingLocal, setIsStoppingLocal] = useState<boolean>(false);
   const [activeLocalSessionId, setActiveLocalSessionId] = useState<string | null>(null);
 
-  const [selectedPanel, setSelectedPanel] = useState<TerminalMode>(id ? "remote" : "local");
   const [activeTerminal, setActiveTerminal] = useState<TerminalMode | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(autoFullscreen);
 
   const remoteSessionIdRef = useRef<string | null>(null);
   const localSessionIdRef = useRef<string | null>(null);
   const activeTerminalRef = useRef<TerminalMode | null>(null);
-  const hasUserSelectedPanelRef = useRef(false);
 
   const { containerRef, terminalRef, fitAddonRef } = useTerminalInstance({
     activeTerminalRef,
     localSessionIdRef,
     remoteSessionIdRef,
   });
+
+  const setActiveRemoteSessionId = useCallback((sessionId: string | null) => {
+    setActiveRemoteSessionIdState(sessionId);
+    if (!sessionId) {
+      setActiveRemoteDeviceId(null);
+    }
+  }, []);
 
   useTerminalSessionEvents({
     activeTerminalRef,
@@ -70,6 +74,13 @@ const TerminalPage = ({
     setRemoteError,
     setRemoteStatus,
   });
+
+  useFullscreenBehavior(isFullscreen, () => setIsFullscreen(false));
+
+  useEffect(() => {
+    setSelectedTarget(id ?? LOCAL_TARGET_ID);
+    setHasManuallySelectedLocal(autoStartLocal);
+  }, [autoStartLocal, id]);
 
   const cleanupSessions = useCallback(() => {
     const remoteSessionId = remoteSessionIdRef.current;
@@ -94,22 +105,6 @@ const TerminalPage = ({
   }, [cleanupSessions, id]);
 
   useEffect(() => {
-    if (activeTerminal) {
-      setSelectedPanel(activeTerminal);
-      hasUserSelectedPanelRef.current = false;
-      return;
-    }
-
-    if (!hasUserSelectedPanelRef.current) {
-      setSelectedPanel(id ? "remote" : "local");
-    }
-  }, [activeTerminal, id]);
-
-  useEffect(() => {
-    hasUserSelectedPanelRef.current = false;
-  }, [id]);
-
-  useEffect(() => {
     if (!activeTerminal) {
       return;
     }
@@ -126,11 +121,7 @@ const TerminalPage = ({
         }
       }
     }
-  }, [activeTerminal]);
-
-  const handleExitFullscreen = useCallback(() => setIsFullscreen(false), []);
-
-  useFullscreenBehavior(isFullscreen, handleExitFullscreen);
+  }, [activeTerminal, fitAddonRef, terminalRef]);
 
   useEffect(() => {
     const fitAddon = fitAddonRef.current;
@@ -148,7 +139,33 @@ const TerminalPage = ({
         window.terminal.resizeLocalSession(sessionId, terminal.cols, terminal.rows);
       }
     }
-  }, [isFullscreen]);
+  }, [fitAddonRef, isFullscreen, terminalRef]);
+
+  const loadDevices = useCallback(async () => {
+    if (!window.devices?.list) {
+      setDevices([]);
+      setDeviceListError("Stored devices are only available from the desktop application.");
+      return;
+    }
+
+    setIsLoadingDevices(true);
+    setDeviceListError(null);
+
+    try {
+      const records = await window.devices.list();
+      setDevices(records);
+    } catch (loadError) {
+      setDeviceListError(
+        loadError instanceof Error ? loadError.message : "Unable to load registered devices.",
+      );
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDevices();
+  }, [loadDevices]);
 
   const stopRemoteSession = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -196,75 +213,91 @@ const TerminalPage = ({
     [],
   );
 
-  const sshCommand = useMemo(() => {
-    const username = device?.username?.trim() || "{username}";
-    const ipAddress = device?.ip?.trim() || "{ip-address}";
-    const base = `ssh -k ${username}@${ipAddress}`;
+  const getDeviceLabel = useCallback((record: RegisteredDevice) => {
+    return record.alias?.trim() || record.hostname?.trim() || record.ip;
+  }, []);
 
-    if (device?.port && device.port !== 22) {
-      return `${base} -p ${device.port}`;
+  const sortedDevices = useMemo(() => {
+    return [...devices].sort((a, b) => getDeviceLabel(a).localeCompare(getDeviceLabel(b)));
+  }, [devices, getDeviceLabel]);
+
+  const selectedDevice = useMemo(() => {
+    if (selectedTarget === LOCAL_TARGET_ID) {
+      return null;
     }
 
-    return base;
-  }, [device]);
+    return sortedDevices.find((record) => record.id === selectedTarget) ?? null;
+  }, [selectedTarget, sortedDevices]);
 
-  const deviceLabel = useMemo(
-    () => device?.alias ?? device?.hostname ?? device?.ip ?? "your device",
-    [device],
+  const handleStartRemoteSession = useCallback(
+    async (targetDevice: RegisteredDevice) => {
+      if (!window.terminal?.startSession || !terminalRef.current) {
+        setRemoteError(
+          "You need to open this page from the Electron application to start an SSH session.",
+        );
+        setRemoteStatus("Session idle");
+        return;
+      }
+
+      if (localSessionIdRef.current) {
+        await stopLocalSession({ silent: true });
+      }
+
+      setRemoteError(null);
+      setRemoteStatus("Connecting...");
+      setIsStartingRemote(true);
+      setActiveTerminal("remote");
+      activeTerminalRef.current = "remote";
+
+      try {
+        const label = getDeviceLabel(targetDevice);
+        terminalRef.current.reset();
+        terminalRef.current.writeln(`\x1b[32mInitializing connection to ${label}...\x1b[0m\r\n`);
+        const { sessionId } = await window.terminal.startSession(targetDevice.id);
+        remoteSessionIdRef.current = sessionId;
+        setActiveRemoteSessionId(sessionId);
+        setActiveRemoteDeviceId(targetDevice.id);
+        setRemoteStatus("Connected");
+        terminalRef.current.focus();
+      } catch (sessionError) {
+        const message =
+          sessionError instanceof Error ? sessionError.message : "Unable to start the SSH session.";
+        setRemoteError(message);
+        setRemoteStatus("Session idle");
+        terminalRef.current.writeln(`\x1b[31m${message}\x1b[0m`);
+        activeTerminalRef.current = null;
+        setActiveTerminal(null);
+      } finally {
+        setIsStartingRemote(false);
+      }
+    },
+    [
+      getDeviceLabel,
+      setActiveRemoteSessionId,
+      stopLocalSession,
+      terminalRef,
+    ],
   );
-
-  const isTerminalAvailable = Boolean(window.terminal?.startSession);
-  const isLocalTerminalAvailable = Boolean(window.terminal?.startLocalSession);
-
-  const handleStartRemoteSession = useCallback(async () => {
-    if (!device?.id || !window.terminal?.startSession || !terminalRef.current) {
-      setRemoteError("You need to open this page from the Electron application to start an SSH session.");
-      return;
-    }
-
-    if (localSessionIdRef.current) {
-      await stopLocalSession({ silent: true });
-    }
-
-    setRemoteError(null);
-    setRemoteStatus("Connecting...");
-    setIsStartingRemote(true);
-    setActiveTerminal("remote");
-    activeTerminalRef.current = "remote";
-
-    try {
-      terminalRef.current.reset();
-      terminalRef.current.writeln(`\x1b[32mInitializing connection to ${deviceLabel}...\x1b[0m\r\n`);
-      const { sessionId } = await window.terminal.startSession(device.id);
-      remoteSessionIdRef.current = sessionId;
-      setActiveRemoteSessionId(sessionId);
-      setRemoteStatus("Connected");
-      terminalRef.current.focus();
-    } catch (sessionError) {
-      const message =
-        sessionError instanceof Error ? sessionError.message : "Unable to start the SSH session.";
-      setRemoteError(message);
-      setRemoteStatus("Session idle");
-      terminalRef.current.writeln(`\x1b[31m${message}\x1b[0m`);
-      activeTerminalRef.current = null;
-      setActiveTerminal(null);
-    } finally {
-      setIsStartingRemote(false);
-    }
-  }, [device?.id, deviceLabel, stopLocalSession, terminalRef]);
-
-  const handleStopRemoteSession = useCallback(async () => {
-    await stopRemoteSession();
-  }, [stopRemoteSession]);
 
   const handleStartLocalSession = useCallback(async () => {
     if (!window.terminal?.startLocalSession || !terminalRef.current) {
-      setLocalError("You need to open this page from the Electron application to start a local terminal session.");
+      setLocalError(
+        "You need to open this page from the Electron application to start a local terminal session.",
+      );
+      setLocalStatus("Session idle");
       return;
     }
 
     if (remoteSessionIdRef.current) {
       await stopRemoteSession({ silent: true });
+    }
+
+    if (localSessionIdRef.current) {
+      setActiveTerminal("local");
+      activeTerminalRef.current = "local";
+      setLocalStatus("Connected");
+      terminalRef.current.focus();
+      return;
     }
 
     setLocalError(null);
@@ -296,20 +329,31 @@ const TerminalPage = ({
     } finally {
       setIsStartingLocal(false);
     }
-  }, [stopRemoteSession, terminalRef]);
+  }, [setActiveLocalSessionId, stopRemoteSession, terminalRef]);
 
-  const handleStopLocalSession = useCallback(async () => {
-    await stopLocalSession();
-  }, [stopLocalSession]);
+  useEffect(() => {
+    if (selectedTarget === LOCAL_TARGET_ID) {
+      setRemoteError(null);
+      if (
+        !autoStartLocal &&
+        !hasManuallySelectedLocal &&
+        !activeLocalSessionId &&
+        !localSessionIdRef.current
+      ) {
+        return;
+      }
 
-  const handleSelectPanel = useCallback((mode: TerminalMode) => {
-    hasUserSelectedPanelRef.current = true;
-    setSelectedPanel(mode);
-  }, []);
+      void handleStartLocalSession();
+      return;
+    }
 
-  const handleToggleFullscreen = useCallback(() => {
-    setIsFullscreen((current) => !current);
-  }, []);
+    if (!selectedDevice) {
+      if (!isLoadingDevices) {
+        setRemoteError("Select a registered device to connect.");
+        setRemoteStatus("Session idle");
+      }
+      return;
+    }
 
   useEffect(() => {
     if (!autoStartLocal || Boolean(id)) {
@@ -326,32 +370,56 @@ const TerminalPage = ({
   const currentStatus = selectedPanel === "remote" ? remoteStatus : localStatus;
   const currentError = selectedPanel === "remote" ? remoteError : localError;
 
-  const sessionIsActive =
-    selectedPanel === "remote" ? Boolean(activeRemoteSessionId) : Boolean(activeLocalSessionId);
-  const isStartingSession = selectedPanel === "remote" ? isStartingRemote : isStartingLocal;
-  const isStoppingSession = selectedPanel === "remote" ? isStoppingRemote : isStoppingLocal;
+    void handleStartRemoteSession(selectedDevice);
+  }, [
+    activeLocalSessionId,
+    activeRemoteDeviceId,
+    activeRemoteSessionId,
+    activeTerminal,
+    autoStartLocal,
+    hasManuallySelectedLocal,
+    handleStartLocalSession,
+    handleStartRemoteSession,
+    isLoadingDevices,
+    selectedDevice,
+    selectedTarget,
+  ]);
 
-  const terminalWrapperClasses = isFullscreen
-    ? "fixed inset-0 z-50 flex flex-col bg-[#030712]"
-    : "mt-5 overflow-hidden rounded-2xl border border-slate-800/80 bg-[#050b19] shadow-[0_30px_60px_-30px_rgba(16,185,129,0.45)]";
+  const handleTargetChange = useCallback(
+    (value: string) => {
+      setSelectedTarget(value);
+      setHasManuallySelectedLocal(value === LOCAL_TARGET_ID);
 
-  const terminalHeaderClasses = isFullscreen
-    ? "flex items-center justify-between border-b border-slate-800/70 bg-[#0f1a2b] px-6 py-4"
-    : "flex items-center justify-between border-b border-slate-800/70 bg-[#0f1a2b]/80 px-5 py-3";
+      if (!showBackButton) {
+        return;
+      }
 
-  const terminalBodyClasses = isFullscreen
-    ? "relative flex-1 bg-[#030712]"
-    : "relative h-[380px] bg-[#030712]/95";
+      if (value === LOCAL_TARGET_ID) {
+        navigate("/terminal");
+        return;
+      }
+
+      navigate(`/terminal/${value}`);
+    },
+    [navigate, showBackButton],
+  );
+
+  const currentStatus = selectedTarget === LOCAL_TARGET_ID ? localStatus : remoteStatus;
+  const currentError = selectedTarget === LOCAL_TARGET_ID ? localError : remoteError;
+  const isBusy =
+    selectedTarget === LOCAL_TARGET_ID
+      ? isStartingLocal || isStoppingLocal
+      : isStartingRemote || isStoppingRemote;
 
   const mainClasses = isFullscreen
-    ? "flex-1 min-h-screen bg-[#050815] py-[4em] px-4 overflow-hidden"
-    : "flex-1 min-h-screen bg-[#050815] py-[4em] px-4 overflow-y-scroll";
+    ? "flex min-h-screen flex-col bg-[#050815] px-4 py-6 overflow-hidden"
+    : "flex-1 min-h-screen bg-[#050815] px-4 py-6 overflow-y-auto";
 
-  const title =
-    deviceLabel === "your device" ? "Connect from your terminal" : `SSH into ${deviceLabel}`;
-  const subtitle = id
-    ? "Open an interactive shell session without leaving the app or switch to the built-in local terminal."
-    : "Launch a session on this device or select a registered device to generate a ready-to-run SSH command.";
+  const terminalWrapperClasses = isFullscreen
+    ? "relative flex-1 overflow-hidden rounded-2xl border border-slate-800 bg-[#030712]"
+    : "relative h-[420px] overflow-hidden rounded-2xl border border-slate-800 bg-[#030712]/95";
+
+  const statusLabel = selectedTarget === LOCAL_TARGET_ID ? "This device" : selectedDevice ? getDeviceLabel(selectedDevice) : "Remote";
 
   return (
     <main className={mainClasses}>
@@ -402,6 +470,25 @@ const TerminalPage = ({
 
             <TerminalManualCommand sshCommand={sshCommand} />
           </div>
+        </div>
+
+        {deviceListError ? (
+          <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {deviceListError}
+          </p>
+        ) : null}
+
+        {currentError ? (
+          <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{currentError}</p>
+        ) : null}
+
+        <div className={terminalWrapperClasses}>
+          <div ref={containerRef} className="absolute inset-0" />
+        </div>
+
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500">
+          <span>{statusLabel}</span>
+          <span>{currentStatus}</span>
         </div>
       </section>
     </main>
