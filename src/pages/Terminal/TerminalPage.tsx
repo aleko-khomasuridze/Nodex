@@ -8,8 +8,6 @@ import useTerminalSessionEvents from "../../hooks/useTerminalSessionEvents";
 import type { RegisteredDevice } from "../../types/device";
 import type { TerminalMode } from "./terminal.types";
 
-const LOCAL_TARGET_ID = "local";
-
 interface TerminalPageProps {
   showBackButton?: boolean;
   autoStartLocal?: boolean;
@@ -43,9 +41,6 @@ const TerminalPage = ({
 
   const [activeTerminal, setActiveTerminal] = useState<TerminalMode | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(autoFullscreen);
-
-  const [selectedTarget, setSelectedTarget] = useState<string>(id ?? LOCAL_TARGET_ID);
-  const [hasManuallySelectedLocal, setHasManuallySelectedLocal] = useState<boolean>(autoStartLocal);
 
   const remoteSessionIdRef = useRef<string | null>(null);
   const localSessionIdRef = useRef<string | null>(null);
@@ -360,13 +355,20 @@ const TerminalPage = ({
       return;
     }
 
-    if (
-      activeTerminal === "remote" &&
-      activeRemoteDeviceId === selectedDevice.id &&
-      activeRemoteSessionId
-    ) {
+  useEffect(() => {
+    if (!autoStartLocal || Boolean(id)) {
       return;
     }
+
+    if (!window.terminal?.startLocalSession) {
+      return;
+    }
+
+    void handleStartLocalSession();
+  }, [autoStartLocal, handleStartLocalSession, id]);
+
+  const currentStatus = selectedPanel === "remote" ? remoteStatus : localStatus;
+  const currentError = selectedPanel === "remote" ? remoteError : localError;
 
     void handleStartRemoteSession(selectedDevice);
   }, [
@@ -421,44 +423,52 @@ const TerminalPage = ({
 
   return (
     <main className={mainClasses}>
-      <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          {showBackButton ? (
-            <button
-              type="button"
-              onClick={() => navigate("/registered-devices")}
-              className="self-start rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-emerald-500 hover:text-white"
-            >
-              Back to devices
-            </button>
-          ) : (
-            <h1 className="text-lg font-semibold text-white">Terminal</h1>
-          )}
+      <section className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col gap-6 rounded-3xl border border-slate-800/70 bg-gradient-to-br from-[#0a0f1f] via-[#050815] to-[#0a0f1f] p-8 shadow-[0_0_60px_rgba(16,185,129,0.08)]">
+          <TerminalHeader
+            title={title}
+            subtitle={subtitle}
+            onNavigateBack={showBackButton ? () => navigate("/registered-devices") : undefined}
+          />
 
-          <div className="flex flex-col gap-2 text-left md:text-right">
-            <label
-              htmlFor="terminal-device"
-              className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400"
-            >
-              Device
-            </label>
-            <select
-              id="terminal-device"
-              value={selectedTarget}
-              onChange={(event) => handleTargetChange(event.target.value)}
-              disabled={isBusy}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-emerald-500 focus:text-white md:w-64"
-            >
-              <option value={LOCAL_TARGET_ID}>This device</option>
-              {sortedDevices.map((record) => (
-                <option key={record.id} value={record.id}>
-                  {getDeviceLabel(record)}
-                </option>
-              ))}
-            </select>
-            {isLoadingDevices ? (
-              <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Loading devices...</span>
-            ) : null}
+          {error ? (
+            <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>
+          ) : null}
+
+          {isLoading ? (
+            <p className="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+              Loading device details...
+            </p>
+          ) : null}
+
+          <div className="flex flex-1 flex-col gap-6">
+            <TerminalSessionSection
+              selectedPanel={selectedPanel}
+              onSelectPanel={handleSelectPanel}
+              canSelectRemote={Boolean(id)}
+              currentStatus={currentStatus}
+              sessionIsActive={sessionIsActive}
+              isStartingSession={isStartingSession}
+              isStoppingSession={isStoppingSession}
+              onStartRemoteSession={() => void handleStartRemoteSession()}
+              onStopRemoteSession={() => void handleStopRemoteSession()}
+              onStartLocalSession={() => void handleStartLocalSession()}
+              onStopLocalSession={() => void handleStopLocalSession()}
+              currentError={currentError}
+              isTerminalAvailable={isTerminalAvailable}
+              isLocalTerminalAvailable={isLocalTerminalAvailable}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={handleToggleFullscreen}
+              terminalWrapperClasses={terminalWrapperClasses}
+              terminalHeaderClasses={terminalHeaderClasses}
+              terminalBodyClasses={terminalBodyClasses}
+              containerRef={containerRef}
+              activeTerminal={activeTerminal}
+            />
+
+            <TerminalQuickReference device={device ?? null} />
+
+            <TerminalManualCommand sshCommand={sshCommand} />
           </div>
         </div>
 
