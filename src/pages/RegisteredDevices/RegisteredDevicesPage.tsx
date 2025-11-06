@@ -116,8 +116,8 @@ const RegisteredDevicesPage = () => {
   }, []);
 
   return (
-    <main className="flex-1 overflow-y-scroll min-h-screen bg-slate-950 py-[4em]">
-      <section className="flex flex-1 flex-col">
+    <main className="flex-1 overflow-y-scroll min-h-screen bg-slate-950 pt-[4em] pb-[12rem]">
+      <section className="flex flex-1 flex-col mx-4">
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
           <header className="flex flex-col gap-2 text-center md:text-left">
             <p className="text-sm uppercase tracking-widest text-emerald-400">

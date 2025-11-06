@@ -152,8 +152,8 @@ const DeviceRegistration = () => {
 
   return (
     <main className="flex-1 overflow-y-scroll min-h-screen bg-slate-950 py-[4em]">
-      <section className="flex flex-1 flex-col justify-center">
-        <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
+      <section className="flex flex-1 flex-col justify-center items-center mx-4">
+        <div className="rounded-3xl border border-slate-800 bg-gradient-to-br lg:w-[45rem] from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
           <header className="mb-8 flex flex-col gap-2 text-center">
             <p className="text-sm uppercase tracking-widest text-emerald-400">
               Device Registration
