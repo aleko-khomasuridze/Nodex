@@ -79,8 +79,8 @@ const NetworkScanPage = () => {
   }, []);
 
   return (
-    <main className="flex-1 overflow-y-scroll min-h-screen bg-slate-950 py-[4em]">
-      <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
+    <main className="flex justify-center overflow-y-scroll min-h-screen bg-slate-950 py-[4em]">
+      <section className="mx-3 flex w-full max-w-3xl  flex-col gap-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
         <ScanControls
           isScanning={isScanning}
           lastScan={lastScan}
