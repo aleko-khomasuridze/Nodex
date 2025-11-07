@@ -216,6 +216,14 @@ const RegisteredDevicesPage = () => {
                           Port {device.port}
                         </p>
                       ) : null}
+                      <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
+                        <span className="font-semibold text-slate-100">
+                          Auth:
+                        </span>
+                        {device.authMethod === "password"
+                          ? "Password"
+                          : "SSH key"}
+                      </p>
                     </div>
 
                     {/* Context menu */}

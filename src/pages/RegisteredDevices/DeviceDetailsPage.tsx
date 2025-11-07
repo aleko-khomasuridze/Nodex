@@ -151,10 +151,29 @@ const DeviceDetailsPage = () => {
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-slate-400">
-                  Password
+                  Authentication
                 </dt>
                 <dd className="text-base font-medium text-white">
-                  {device.password ? "••••••••" : "—"}
+                  {device.authMethod === "password"
+                    ? "Password (encrypted)"
+                    : "SSH key (encrypted private key)"}
+                </dd>
+              </div>
+              <div className="md:col-span-2">
+                <dt className="text-xs uppercase tracking-wide text-slate-400">
+                  Public key
+                </dt>
+                <dd className="mt-2 text-sm text-slate-200">
+                  {device.publicKey ? (
+                    <textarea
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950/80 p-3 text-xs text-slate-100"
+                      readOnly
+                      rows={4}
+                      value={device.publicKey}
+                    />
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
                 </dd>
               </div>
               <div>

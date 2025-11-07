@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ClientChannel } from 'ssh2';
 import { Client } from 'ssh2';
 import type { DeviceRecord } from '../../domain/devices/Device';
+import { decrypt } from '../security/encryption';
 
 interface SessionHandlers {
   onData: (sessionId: string, chunk: string) => void;
@@ -25,13 +26,13 @@ export class SshSessionManager {
     handlers: SessionHandlers
   ): Promise<{ sessionId: string }> {
     const username = device.username;
-    const password = device.password;
-
-    if (!username || !password) {
+    if (!username) {
       throw new Error(
-        'The selected device is missing SSH credentials. Please provide a username and password before starting a session.'
+        'The selected device is missing SSH credentials. Please provide a username before starting a session.'
       );
     }
+
+    const credentials = this.resolveAuthentication(device);
 
     return new Promise((resolve, reject) => {
       const connection = new Client();
@@ -108,8 +109,19 @@ export class SshSessionManager {
           host: device.ip,
           port: device.port ?? 22,
           username,
-          password,
-          readyTimeout: 15000
+          readyTimeout: 15000,
+          keepaliveInterval: 10000,
+          hostVerifier: () => true,
+          algorithms: {
+            serverHostKey: [
+              'rsa-sha2-512',
+              'rsa-sha2-256',
+              'ecdsa-sha2-nistp256',
+              'ssh-ed25519',
+              'ssh-rsa'
+            ]
+          },
+          ...credentials
         });
     });
   }
@@ -131,5 +143,31 @@ export class SshSessionManager {
     session.stream.end();
     session.connection.end();
     this.sessions.delete(sessionId);
+  }
+
+  private resolveAuthentication(
+    device: DeviceRecord
+  ): { password?: string; privateKey?: string } {
+    if (device.authMethod === 'password') {
+      if (!device.encryptedPassword) {
+        throw new Error(
+          'The selected device is missing an encrypted password. Update the device credentials and try again.'
+        );
+      }
+
+      return {
+        password: decrypt(device.encryptedPassword)
+      };
+    }
+
+    if (!device.privateKey) {
+      throw new Error(
+        'The selected device is missing a private key. Update the device credentials and try again.'
+      );
+    }
+
+    return {
+      privateKey: decrypt(device.privateKey)
+    };
   }
 }

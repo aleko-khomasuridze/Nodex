@@ -25,9 +25,28 @@ const sanitizePort = (port?: number | null): number | null => {
   return null;
 };
 
-export const validateAndNormalizeInput = <T extends { ip: string; alias?: string | null; hostname?: string | null; port?: number | null; username?: string | null; password?: string | null; }>(
-  input: T
-): T => {
+const sanitizeAuthMethod = (value: unknown): import('./Device').DeviceAuthMethod => {
+  if (value === 'password' || value === 'key') {
+    return value;
+  }
+  throw new DeviceValidationError(
+    'Invalid authentication method. Supported options are "password" or "key".'
+  );
+};
+
+export const sanitizeSecret = (value?: string | null): string | null =>
+  sanitizeOptionalString(value);
+
+export const validateAndNormalizeInput = <
+  T extends {
+    ip: string;
+    alias?: string | null;
+    hostname?: string | null;
+    port?: number | null;
+    username?: string | null;
+    authMethod: string | import('./Device').DeviceAuthMethod;
+  }
+>(input: T): T & { authMethod: import('./Device').DeviceAuthMethod } => {
   const ip = input.ip.trim();
   if (!IP_ADDRESS_PATTERN.test(ip)) {
     throw new DeviceValidationError('A valid IPv4 address is required.');
@@ -39,7 +58,7 @@ export const validateAndNormalizeInput = <T extends { ip: string; alias?: string
     alias: sanitizeOptionalString(input.alias),
     hostname: sanitizeOptionalString(input.hostname),
     username: sanitizeOptionalString(input.username),
-    password: sanitizeOptionalString(input.password),
-    port: sanitizePort(input.port)
+    port: sanitizePort(input.port),
+    authMethod: sanitizeAuthMethod(input.authMethod)
   };
 };

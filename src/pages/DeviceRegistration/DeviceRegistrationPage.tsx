@@ -17,12 +17,16 @@ const DeviceRegistration = () => {
     port: "",
     username: "",
     password: "",
+    authMethod: "password" as DeviceRegistrationPayload["authMethod"],
   });
   const [status, setStatus] = useState({
     isSubmitting: false,
     error: null as string | null,
     success: false,
   });
+  const [generatedPublicKey, setGeneratedPublicKey] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -70,6 +74,20 @@ const DeviceRegistration = () => {
       }));
     };
 
+  const handleAuthMethodChange = (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const { value } = event.target;
+    if (value === "password" || value === "key") {
+      setFormState((previous) => ({
+        ...previous,
+        authMethod: value,
+        password: value === "password" ? previous.password : "",
+      }));
+      setGeneratedPublicKey(null);
+    }
+  };
+
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
 
@@ -101,6 +119,7 @@ const DeviceRegistration = () => {
     const payload: DeviceRegistrationPayload = {
       ip,
       hostname: device?.hostname ?? null,
+      authMethod: formState.authMethod,
     };
 
     if (alias) {
@@ -109,7 +128,15 @@ const DeviceRegistration = () => {
     if (username) {
       payload.username = username;
     }
-    if (password) {
+    if (formState.authMethod === "password") {
+      if (!password) {
+        setStatus({
+          isSubmitting: false,
+          error: "Please provide the SSH password.",
+          success: false,
+        });
+        return;
+      }
       payload.password = password;
     }
     if (portValue) {
@@ -129,15 +156,20 @@ const DeviceRegistration = () => {
       payload.port = numericPort;
     }
 
+    setGeneratedPublicKey(null);
     setStatus({ isSubmitting: true, error: null, success: false });
 
     try {
-      await window.devices.register(payload);
+      const record = await window.devices.register(payload);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       setStatus({ isSubmitting: false, error: null, success: true });
-      setTimeout(() => {
-        navigate("/registered-devices");
-      }, 500);
+      if (record.authMethod === "key" && record.publicKey) {
+        setGeneratedPublicKey(record.publicKey);
+      } else {
+        setTimeout(() => {
+          navigate("/registered-devices");
+        }, 500);
+      }
     } catch (error: unknown) {
       setStatus({
         isSubmitting: false,
@@ -199,14 +231,58 @@ const DeviceRegistration = () => {
               value={formState.username}
               onChange={handleChange("username")}
             />
-            <FormInput
-              id="password"
-              type="password"
-              label="Device Password"
-              placeHolder="Device Password"
-              value={formState.password}
-              onChange={handleChange("password")}
-            />
+            <div className="md:col-span-2">
+              <fieldset className="rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4">
+                <legend className="px-2 text-xs uppercase tracking-wide text-slate-400">
+                  Authentication method
+                </legend>
+                <div className="mt-3 flex flex-col gap-3 md:flex-row">
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                    <input
+                      type="radio"
+                      name="authentication-method"
+                      value="password"
+                      checked={formState.authMethod === "password"}
+                      onChange={handleAuthMethodChange}
+                      className="h-4 w-4 border border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                    />
+                    Password
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                    <input
+                      type="radio"
+                      name="authentication-method"
+                      value="key"
+                      checked={formState.authMethod === "key"}
+                      onChange={handleAuthMethodChange}
+                      className="h-4 w-4 border border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                    />
+                    SSH key pair
+                  </label>
+                </div>
+                <p className="mt-3 text-xs text-slate-400">
+                  Choose whether to store an encrypted password or let Nodex
+                  generate a dedicated SSH key pair for this device.
+                </p>
+              </fieldset>
+            </div>
+            {formState.authMethod === "password" ? (
+              <FormInput
+                id="password"
+                type="password"
+                label="Device Password"
+                placeHolder="Device Password"
+                value={formState.password}
+                onChange={handleChange("password")}
+                className="md:col-span-2"
+              />
+            ) : (
+              <div className="md:col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-200">
+                Nodex will generate a secure SSH key pair and store the private
+                key encrypted. Install the generated public key on the device to
+                enable key-based authentication.
+              </div>
+            )}
             {status.error ? (
               <p className="md:col-span-2 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                 {status.error}
@@ -214,8 +290,32 @@ const DeviceRegistration = () => {
             ) : null}
             {status.success ? (
               <p className="md:col-span-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                Device registered successfully.
+                {formState.authMethod === "key" && generatedPublicKey
+                  ? "Device registered successfully. Install the generated public key on your device before attempting to connect."
+                  : "Device registered successfully."}
               </p>
+            ) : null}
+            {generatedPublicKey ? (
+              <div className="md:col-span-2 space-y-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-4">
+                <div>
+                  <p className="text-sm font-medium text-emerald-200">
+                    Generated public key
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-100/80">
+                    Copy this key to the device's
+                    <code className="mx-1 rounded bg-emerald-500/10 px-1 text-[0.65rem]">
+                      authorized_keys
+                    </code>
+                    file to finish setup.
+                  </p>
+                </div>
+                <textarea
+                  className="w-full rounded-lg border border-emerald-500/40 bg-slate-950/80 p-3 text-xs text-emerald-100"
+                  rows={4}
+                  readOnly
+                  value={generatedPublicKey}
+                />
+              </div>
             ) : null}
             <div className="md:col-span-2">
               <button
