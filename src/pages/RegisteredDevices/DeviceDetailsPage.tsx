@@ -53,7 +53,7 @@ const DeviceDetailsPage = () => {
   }, [id]);
 
   return (
-    <main className="mx-auto my-[4em] flex max-w-4xl flex-1 flex-col px-4 overflow-y-auto">
+    <main className="mx-auto mt-[4em] flex max-w-4xl flex-1 flex-col px-4 overflow-y-auto">
       <section className="flex flex-1 flex-col">
         <div className="flex flex-col gap-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-xl">
           <header className="flex flex-col gap-2 text-center md:text-left">
@@ -89,7 +89,7 @@ const DeviceDetailsPage = () => {
                   className="rounded-lg border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/10"
                   onClick={() => navigate(`/terminal/${device.id}`)}
                 >
-                  Connection steps
+                  Connect
                 </button>
               </>
             ) : null}
@@ -157,23 +157,6 @@ const DeviceDetailsPage = () => {
                   {device.authMethod === "password"
                     ? "Password (encrypted)"
                     : "SSH key (encrypted private key)"}
-                </dd>
-              </div>
-              <div className="md:col-span-2">
-                <dt className="text-xs uppercase tracking-wide text-slate-400">
-                  Public key
-                </dt>
-                <dd className="mt-2 text-sm text-slate-200">
-                  {device.publicKey ? (
-                    <textarea
-                      className="w-full rounded-lg border border-slate-700 bg-slate-950/80 p-3 text-xs text-slate-100"
-                      readOnly
-                      rows={4}
-                      value={device.publicKey}
-                    />
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
                 </dd>
               </div>
               <div>
