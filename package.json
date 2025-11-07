@@ -2,7 +2,7 @@
   "name": "nodex",
   "version": "0.1.0",
   "author": "Aleko Khomasuridze",
-  "icon": "./assets/icons/favicon.svg",
+  "icon": "./assets/icons/favicon.ico",
   "private": true,
   "description": "Electron + React + TypeScript + Tailwind CSS app bootstrapped with Vite.",
   "main": "dist-electron/main.js",
@@ -20,6 +20,9 @@
   },
   "build": {
     "appId": "com.netsurf.nodex",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**",
       "dist-electron/**",
@@ -31,8 +34,9 @@
         "to": "assets/icons"
       }
     ],
-    "directories": {
-      "output": "release"
+    "win": {
+      "icon": "assets/icons/favicon.ico",
+      "target": "nsis"
     }
   },
   "dependencies": {

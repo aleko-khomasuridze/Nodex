@@ -39,8 +39,8 @@ const createWindow = async () => {
   if (isDevelopment && devServerURL) {
     await mainWindow.loadURL(devServerURL);
   } else {
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    await mainWindow.loadFile(indexPath);
+    const indexHtml = path.join(app.getAppPath(), "dist", "index.html");
+    await mainWindow.loadFile(indexHtml);
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
