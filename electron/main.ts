@@ -12,6 +12,7 @@ const createWindow = async () => {
     width: 1024,
     height: 768,
     backgroundColor: '#0f172a',
+    autoHideMenuBar: true,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -22,9 +23,9 @@ const createWindow = async () => {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    if (isDevelopment) {
-      mainWindow.webContents.openDevTools({ mode: 'detach' });
-    }
+    // if (isDevelopment) {
+    //   mainWindow.webContents.openDevTools({ mode: 'detach' });
+    // }
   });
 
   const devServerURL = process.env.VITE_DEV_SERVER_URL;

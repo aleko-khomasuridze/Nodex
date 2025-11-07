@@ -1,6 +1,8 @@
 {
   "name": "nodex",
   "version": "0.1.0",
+  "author": "Aleko Khomasuridze",
+  "icon": "./assets/icons/favicon.svg",
   "private": true,
   "description": "Electron + React + TypeScript + Tailwind CSS app bootstrapped with Vite.",
   "main": "dist-electron/main.js",
@@ -12,7 +14,20 @@
     "build": "npm run build:renderer && npm run build:electron",
     "build:renderer": "vite build",
     "build:electron": "tsc -p electron/tsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "package:win": "electron-builder --win --x64",
+    "package:mac": "electron-builder --mac dmg"
+  },
+  "build": {
+    "appId": "com.netsurf.nodex",
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    }
   },
   "dependencies": {
     "@remixicon/react": "^4.7.0",
@@ -38,6 +53,7 @@
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^29.1.0",
+    "electron-builder": "^26.0.12",
     "electron-rebuild": "^3.2.9",
     "nodemon": "^3.1.0",
     "postcss": "^8.4.38",
