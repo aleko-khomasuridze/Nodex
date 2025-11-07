@@ -1,9 +1,27 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import os from 'node:os';
-import sshpk from 'sshpk';
-import dotenv from 'dotenv'
+import path from 'node:path';
+import fs from 'node:fs';
+import sshpk, { PrivateKey } from 'sshpk';
+import dotenv from 'dotenv';
 
-dotenv.config()
+const loadEnvironment = () => {
+  const candidates = [
+    path.resolve(process.cwd(), '.env'),
+    process.resourcesPath ? path.join(process.resourcesPath, '.env') : null,
+  ].filter((candidate): candidate is string => Boolean(candidate));
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      dotenv.config({ path: candidate });
+      return;
+    }
+  }
+
+  dotenv.config();
+};
+
+loadEnvironment();
 
 const KEY_LENGTH = 32;
 const IV_LENGTH = 12;
@@ -91,10 +109,10 @@ export const decrypt = (payload: string): string => {
 
 export const generateKeyPair = (): { publicKey: string; privateKey: string } => {
   const comment = `nodex@${os.hostname()}`;
-  const generate = sshpk.generatePrivateKey as unknown as (
+  const generate = sshpk.generatePrivateKey as (
     type: string,
     options?: { comment?: string }
-  ) => sshpk.PrivateKey;
+  ) => PrivateKey;
   const privateKey = generate('ed25519', { comment });
 
   return {
