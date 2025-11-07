@@ -16,25 +16,33 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      devTools: false, 
     },
   });
+
+  if (app.isPackaged) {
+    mainWindow.removeMenu(); // <--- Kill menu completely
+  }
 
   mainWindow.once("ready-to-show", () => mainWindow.show());
 
   if (!app.isPackaged) {
-    const devURL = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
-    await mainWindow.loadURL(devURL);
+    await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || "http://localhost:5173");
   } else {
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    await mainWindow.loadFile(indexPath);
-
+    await mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: "deny" };
-  });
+  // Block context menu in prod
+  if (app.isPackaged) {
+    mainWindow.webContents.on("context-menu", (e) => e.preventDefault());
+
+    // Close devtools if somehow opened
+    mainWindow.webContents.on("devtools-opened", () => {
+      mainWindow.webContents.closeDevTools();
+    });
+  }
 };
+
 
 app.whenReady().then(async () => {
   backendContext = registerBackendHandlers({ app, ipcMain });
@@ -48,5 +56,18 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
+
+import { globalShortcut } from "electron";
+
+app.whenReady().then(async () => {
+  if (app.isPackaged) {
+    globalShortcut.register("Control+Shift+I", () => {});
+    globalShortcut.register("Command+Option+I", () => {});
+    globalShortcut.register("F12", () => {});
+  }
+
+  await createWindow();
+});
+
 
 export const getBackendContext = () => backendContext;

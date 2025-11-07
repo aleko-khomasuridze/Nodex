@@ -1,10 +1,11 @@
 {
-  "name": "nodex",
-  "version": "0.1.0",
+  "name": "nodex-enterprise",
+  "productName": "Nodex Enterprise",
+  "version": "0.1.1",
   "author": "Aleko Khomasuridze",
   "icon": "./assets/icons/favicon.ico",
   "private": true,
-  "description": "Electron + React + TypeScript + Tailwind CSS app bootstrapped with Vite.",
+  "description": "Electron-based toolkit for managing remote Node.js environments.",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:watch:electron\" \"npm:start:electron\"",
