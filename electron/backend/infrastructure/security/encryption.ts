@@ -1,6 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import os from 'node:os';
 import sshpk from 'sshpk';
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const KEY_LENGTH = 32;
 const IV_LENGTH = 12;
