@@ -27,7 +27,7 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      // devTools: false,
+      devTools: false,
     },
   });
 
