@@ -21,7 +21,7 @@ declare global {
       ) => Promise<import('./types/device').RegisteredDevice>;
       update: (
         id: string,
-        updates: Partial<import('./types/device').DeviceRegistrationPayload>
+        updates: import('./types/device').DeviceUpdatePayload
       ) => Promise<import('./types/device').RegisteredDevice>;
       remove: (id: string) => Promise<void>;
     };

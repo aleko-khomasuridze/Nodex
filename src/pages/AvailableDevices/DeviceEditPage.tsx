@@ -2,7 +2,11 @@ import type { ChangeEvent, FormEventHandler } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import FormInput from "../../components/form/FormInput";
-import type { DeviceRegistrationPayload, RegisteredDevice } from "../../types/device";
+import type {
+  DeviceAuthMethod,
+  DeviceUpdatePayload,
+  RegisteredDevice,
+} from "../../types/device";
 
 const DeviceEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +28,9 @@ const DeviceEditPage = () => {
     port: "",
     username: "",
     password: "",
+    authMethod: "password" as DeviceAuthMethod,
   });
+  const [generatedPublicKey, setGeneratedPublicKey] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDevice = async () => {
@@ -48,13 +54,16 @@ const DeviceEditPage = () => {
       try {
         const record = await window.devices.get(id);
         setDevice(record);
-        setFormState({
+        setFormState((previous) => ({
+          ...previous,
           alias: record.alias ?? "",
           ip: record.ip,
           port: record.port ? String(record.port) : "",
           username: record.username ?? "",
           password: "",
-        });
+          authMethod: record.authMethod,
+        }));
+        setGeneratedPublicKey(record.publicKey ?? null);
       } catch (loadError) {
         setStatus({
           isSubmitting: false,
@@ -84,6 +93,21 @@ const DeviceEditPage = () => {
     []
   );
 
+  const handleAuthMethodChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const { value } = event.target;
+      if (value === "password" || value === "key") {
+        setFormState((previous) => ({
+          ...previous,
+          authMethod: value,
+          password: value === "password" ? previous.password : "",
+        }));
+        setGeneratedPublicKey(value === "key" ? device?.publicKey ?? null : null);
+      }
+    },
+    [device?.publicKey]
+  );
+
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
 
@@ -111,13 +135,32 @@ const DeviceEditPage = () => {
     const password = formState.password.trim();
     const portValue = formState.port.trim();
 
-    const updates: Partial<DeviceRegistrationPayload> = {
+    const updates: DeviceUpdatePayload = {
       ip,
+      authMethod: formState.authMethod,
     };
 
     updates.alias = alias.length > 0 ? alias : null;
     updates.username = username.length > 0 ? username : null;
-    updates.password = password.length > 0 ? password : null;
+
+    if (
+      formState.authMethod === "password" &&
+      device?.authMethod === "key" &&
+      password.length === 0
+    ) {
+      setStatus({
+        isSubmitting: false,
+        error: "Provide the SSH password when switching from key-based authentication.",
+        success: false,
+      });
+      return;
+    }
+
+    if (formState.authMethod === "password") {
+      if (password.length > 0) {
+        updates.password = password;
+      }
+    }
 
     if (portValue) {
       const numericPort = Number(portValue);
@@ -134,14 +177,32 @@ const DeviceEditPage = () => {
       updates.port = null;
     }
 
+    if (formState.authMethod === "key") {
+      setGeneratedPublicKey(null);
+    }
     setStatus({ isSubmitting: true, error: null, success: false });
 
     try {
-      await window.devices.update(id, updates);
+      const record = await window.devices.update(id, updates);
+      setDevice(record);
+      setFormState((previous) => ({
+        ...previous,
+        alias: record.alias ?? "",
+        ip: record.ip,
+        port: record.port ? String(record.port) : "",
+        username: record.username ?? "",
+        password: "",
+        authMethod: record.authMethod,
+      }));
       setStatus({ isSubmitting: false, error: null, success: true });
-      setTimeout(() => {
-        navigate(`/available-devices/${id}`);
-      }, 500);
+      if (record.authMethod === "key" && record.publicKey) {
+        setGeneratedPublicKey(record.publicKey);
+      } else {
+        setGeneratedPublicKey(null);
+        setTimeout(() => {
+          navigate(`/available-devices/${id}`);
+        }, 500);
+      }
     } catch (error: unknown) {
       setStatus({
         isSubmitting: false,
@@ -200,14 +261,59 @@ const DeviceEditPage = () => {
                 value={formState.username}
                 onChange={handleChange("username")}
               />
-              <FormInput
-                id="password"
-                type="password"
-                label="Device Password"
-                placeHolder="Device Password"
-                value={formState.password}
-                onChange={handleChange("password")}
-              />
+              <div className="md:col-span-2">
+                <fieldset className="rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4">
+                  <legend className="px-2 text-xs uppercase tracking-wide text-slate-400">
+                    Authentication method
+                  </legend>
+                  <div className="mt-3 flex flex-col gap-3 md:flex-row">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                      <input
+                        type="radio"
+                        name="authentication-method"
+                        value="password"
+                        checked={formState.authMethod === "password"}
+                        onChange={handleAuthMethodChange}
+                        className="h-4 w-4 border border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                      />
+                      Password
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                      <input
+                        type="radio"
+                        name="authentication-method"
+                        value="key"
+                        checked={formState.authMethod === "key"}
+                        onChange={handleAuthMethodChange}
+                        className="h-4 w-4 border border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                      />
+                      SSH key pair
+                    </label>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-400">
+                    Toggle between password and key-based authentication. When
+                    switching to keys, Nodex will generate a new pair and store
+                    the private key encrypted.
+                  </p>
+                </fieldset>
+              </div>
+              {formState.authMethod === "password" ? (
+                <FormInput
+                  id="password"
+                  type="password"
+                  label="Device Password"
+                  placeHolder="Device Password"
+                  value={formState.password}
+                  onChange={handleChange("password")}
+                  className="md:col-span-2"
+                />
+              ) : (
+                <div className="md:col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-200">
+                  Nodex will keep the encrypted private key locally. If you
+                  rotate the key pair, install the new public key on the device
+                  after saving.
+                </div>
+              )}
               {status.error ? (
                 <p className="md:col-span-2 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                   {status.error}
@@ -215,8 +321,29 @@ const DeviceEditPage = () => {
               ) : null}
               {status.success ? (
                 <p className="md:col-span-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                  Device updated successfully.
+                  {formState.authMethod === "key" && generatedPublicKey
+                    ? "Device updated successfully. Install the generated public key on the device before connecting."
+                    : "Device updated successfully."}
                 </p>
+              ) : null}
+              {generatedPublicKey ? (
+                <div className="md:col-span-2 space-y-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-4">
+                  <div>
+                    <p className="text-sm font-medium text-emerald-200">
+                      Active public key
+                    </p>
+                    <p className="mt-1 text-xs text-emerald-100/80">
+                      Copy this key to the device's authorized_keys file to
+                      allow Nodex to connect.
+                    </p>
+                  </div>
+                  <textarea
+                    className="w-full rounded-lg border border-emerald-500/40 bg-slate-950/80 p-3 text-xs text-emerald-100"
+                    rows={4}
+                    readOnly
+                    value={generatedPublicKey}
+                  />
+                </div>
               ) : null}
               <div className="md:col-span-2">
                 <button

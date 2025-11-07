@@ -14,7 +14,7 @@ interface DeviceFileSchema {
 }
 
 const DEFAULT_SCHEMA: DeviceFileSchema = {
-  version: 1,
+  version: 2,
   devices: []
 };
 
@@ -76,7 +76,10 @@ export class JsonDeviceRepository implements DeviceRepository {
       hostname: input.hostname ?? null,
       port: input.port ?? null,
       username: input.username ?? null,
-      password: input.password ?? null
+      authMethod: input.authMethod,
+      encryptedPassword: input.encryptedPassword ?? null,
+      privateKey: input.privateKey ?? null,
+      publicKey: input.publicKey ?? null
     };
 
     const data = await this.readFile();
@@ -102,7 +105,15 @@ export class JsonDeviceRepository implements DeviceRepository {
       ip: updates.ip ?? existing.ip,
       port: updates.port ?? existing.port ?? null,
       username: updates.username ?? existing.username ?? null,
-      password: updates.password ?? existing.password ?? null,
+      authMethod: updates.authMethod ?? existing.authMethod,
+      encryptedPassword:
+        updates.encryptedPassword === undefined
+          ? existing.encryptedPassword
+          : updates.encryptedPassword ?? null,
+      privateKey:
+        updates.privateKey === undefined ? existing.privateKey : updates.privateKey ?? null,
+      publicKey:
+        updates.publicKey === undefined ? existing.publicKey : updates.publicKey ?? null,
       updatedAt: new Date().toISOString()
     };
 

@@ -1,13 +1,23 @@
-import bcrypt from 'bcrypt';
 import type {
+  DeviceAuthMethod,
   DeviceCreateInput,
   DeviceRecord,
-  DeviceUpdateInput
+  DeviceRegistrationInput,
+  DeviceUpdateInput,
+  DeviceUpdateRequest
 } from '../../domain/devices/Device';
 import type { DeviceRepository } from '../../domain/devices/DeviceRepository';
-import { DeviceValidationError, validateAndNormalizeInput } from '../../domain/devices/DeviceValidation';
+import {
+  DeviceValidationError,
+  sanitizeSecret,
+  validateAndNormalizeInput
+} from '../../domain/devices/DeviceValidation';
+import { encrypt, generateKeyPair } from '../../infrastructure/security/encryption';
 
-const BCRYPT_SALT_ROUNDS = 12;
+type DeviceCredentialPayload = Pick<
+  DeviceCreateInput,
+  'encryptedPassword' | 'privateKey' | 'publicKey'
+>;
 
 export class DeviceController {
   constructor(private readonly repository: DeviceRepository) {}
@@ -24,50 +34,63 @@ export class DeviceController {
     return this.repository.getAll();
   }
 
-  async registerDevice(input: DeviceCreateInput): Promise<DeviceRecord> {
+  async registerDevice(input: DeviceRegistrationInput): Promise<DeviceRecord> {
     const normalized = validateAndNormalizeInput(input);
     const existing = await this.repository.getByIp(normalized.ip);
     if (existing) {
       throw new DeviceValidationError('A device with this IP address is already registered.');
     }
-    const { password: normalizedPassword, ...rest } = normalized;
-    const password = normalizedPassword ? await this.hashPassword(normalizedPassword) : null;
-    return this.repository.create({
-      ...rest,
-      password
-    });
+
+    const credentials = this.resolveCredentialsForCreate(
+      normalized.authMethod,
+      sanitizeSecret(input.password)
+    );
+
+    const payload: DeviceCreateInput = {
+      ip: normalized.ip,
+      alias: normalized.alias ?? null,
+      hostname: normalized.hostname ?? null,
+      port: normalized.port ?? null,
+      username: normalized.username ?? null,
+      authMethod: normalized.authMethod,
+      ...credentials
+    };
+
+    return this.repository.create(payload);
   }
 
-  async updateDevice(id: string, updates: DeviceUpdateInput): Promise<DeviceRecord> {
+  async updateDevice(id: string, updates: DeviceUpdateRequest): Promise<DeviceRecord> {
     const existing = await this.repository.getById(id);
     if (!existing) {
       throw new DeviceValidationError('Unable to update a device that does not exist.');
     }
 
-    const normalized = updates.ip
-      ? validateAndNormalizeInput({ ...existing, ...updates })
-      : {
-          ...existing,
-          ...updates,
-          alias: updates.alias ?? existing.alias,
-          hostname: updates.hostname ?? existing.hostname,
-          port: updates.port ?? existing.port,
-          username: updates.username ?? existing.username,
-          password: updates.password ?? existing.password
-        };
+    const normalized = validateAndNormalizeInput({
+      ...existing,
+      ...updates,
+      authMethod: updates.authMethod ?? existing.authMethod
+    });
 
     const sanitizedPassword =
-      updates.password === undefined ? undefined : this.sanitizePassword(updates.password);
-    const password = await this.resolvePasswordForUpdate(sanitizedPassword, existing.password ?? null);
+      updates.password === undefined ? undefined : sanitizeSecret(updates.password);
 
-    return this.repository.update(id, {
-      alias: normalized.alias,
-      hostname: normalized.hostname,
+    const credentials = this.resolveCredentialsForUpdate(
+      normalized.authMethod,
+      sanitizedPassword,
+      existing
+    );
+
+    const payload: DeviceUpdateInput = {
+      alias: normalized.alias ?? null,
+      hostname: normalized.hostname ?? null,
       ip: normalized.ip,
-      port: normalized.port,
-      username: normalized.username,
-      password
-    });
+      port: normalized.port ?? null,
+      username: normalized.username ?? null,
+      authMethod: normalized.authMethod,
+      ...credentials
+    };
+
+    return this.repository.update(id, payload);
   }
 
   async removeDevice(id: string): Promise<void> {
@@ -79,30 +102,78 @@ export class DeviceController {
     await this.repository.delete(id);
   }
 
-  private sanitizePassword(value?: string | null): string | null {
-    if (typeof value !== 'string') {
-      return null;
+  private resolveCredentialsForCreate(
+    authMethod: DeviceAuthMethod,
+    password: string | null
+  ): DeviceCredentialPayload {
+    if (authMethod === 'password') {
+      if (!password) {
+        throw new DeviceValidationError(
+          'A password is required when using password authentication.'
+        );
+      }
+
+      return {
+        encryptedPassword: encrypt(password),
+        privateKey: null,
+        publicKey: null
+      };
     }
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
+
+    const { privateKey, publicKey } = generateKeyPair();
+    return {
+      encryptedPassword: null,
+      privateKey: encrypt(privateKey),
+      publicKey
+    };
   }
 
-  private hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-  }
+  private resolveCredentialsForUpdate(
+    authMethod: DeviceAuthMethod,
+    passwordUpdate: string | null | undefined,
+    existing: DeviceRecord
+  ): DeviceCredentialPayload {
+    if (authMethod === 'password') {
+      if (passwordUpdate === undefined) {
+        if (existing.authMethod !== 'password' && !existing.encryptedPassword) {
+          throw new DeviceValidationError(
+            'Switching to password authentication requires providing a password.'
+          );
+        }
 
-  private async resolvePasswordForUpdate(
-    sanitizedUpdate: string | null | undefined,
-    currentPassword: string | null
-  ): Promise<string | null> {
-    if (sanitizedUpdate === undefined) {
-      return currentPassword;
+        return {
+          encryptedPassword: existing.encryptedPassword,
+          privateKey: null,
+          publicKey: null
+        };
+      }
+
+      if (!passwordUpdate) {
+        throw new DeviceValidationError(
+          'A password is required when using password authentication.'
+        );
+      }
+
+      return {
+        encryptedPassword: encrypt(passwordUpdate),
+        privateKey: null,
+        publicKey: null
+      };
     }
 
-    if (sanitizedUpdate === null) {
-      return currentPassword;
+    if (existing.authMethod === 'key' && passwordUpdate === undefined) {
+      return {
+        encryptedPassword: null,
+        privateKey: existing.privateKey,
+        publicKey: existing.publicKey
+      };
     }
 
-    return this.hashPassword(sanitizedUpdate);
+    const { privateKey, publicKey } = generateKeyPair();
+    return {
+      encryptedPassword: null,
+      privateKey: encrypt(privateKey),
+      publicKey
+    };
   }
 }

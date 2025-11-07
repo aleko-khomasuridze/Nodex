@@ -25,15 +25,19 @@ const TerminalQuickReference = ({ device }: TerminalQuickReferenceProps) => (
         <dd className="text-sm font-medium text-slate-100">{device?.port ?? 22}</dd>
       </div>
       <div>
-        <dt className="text-xs uppercase tracking-wide text-slate-400">Password</dt>
+        <dt className="text-xs uppercase tracking-wide text-slate-400">Authentication</dt>
         <dd className="text-sm font-medium text-slate-100">
-          {device?.password ? "Stored securely" : "Not stored"}
+          {device
+            ? device.authMethod === "password"
+              ? "Password (encrypted)"
+              : "SSH key (encrypted private key)"
+            : "Not configured"}
         </dd>
       </div>
     </dl>
     <p className="mt-4 text-xs text-slate-400">
-      Tip: If your SSH server uses private key authentication, include the
-      <code className="rounded bg-slate-800 px-1">-i /path/to/private-key</code> flag when running the command.
+      Tip: Nodex automatically decrypts stored credentials when connecting, so
+      you can initiate sessions without manually passing passwords or key paths.
     </p>
   </section>
 );
