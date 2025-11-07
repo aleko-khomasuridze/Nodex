@@ -203,27 +203,30 @@ const RegisteredDevicesPage = () => {
                       <p className="mt-1 text-xs text-slate-500">
                         Last updated {formatTimestamp(device.updatedAt)}
                       </p>
-                      {device.username ? (
+                      <div className="flex gap-2">
+
+                        {device.username ? (
+                          <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
+                            <span className="font-semibold text-slate-100">
+                              User:
+                            </span>
+                            {device.username}
+                            {device.port ? ` • Port ${device.port}` : ""}
+                          </p>
+                        ) : device.port ? (
+                          <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
+                            Port {device.port}
+                          </p>
+                        ) : null}
                         <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
                           <span className="font-semibold text-slate-100">
-                            User:
+                            Auth:
                           </span>
-                          {device.username}
-                          {device.port ? ` • Port ${device.port}` : ""}
+                          {device.authMethod === "password"
+                            ? "Password"
+                            : "SSH key"}
                         </p>
-                      ) : device.port ? (
-                        <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
-                          Port {device.port}
-                        </p>
-                      ) : null}
-                      <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
-                        <span className="font-semibold text-slate-100">
-                          Auth:
-                        </span>
-                        {device.authMethod === "password"
-                          ? "Password"
-                          : "SSH key"}
-                      </p>
+                      </div>
                     </div>
 
                     {/* Context menu */}

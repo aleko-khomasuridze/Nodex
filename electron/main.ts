@@ -1,14 +1,25 @@
 import { app, BrowserWindow, shell, ipcMain, globalShortcut } from "electron";
 import path from "node:path";
+import dotenv from "dotenv"; 
 import type { BackendHandlerContext } from "./backend/handlers/handler";
 import { registerBackendHandlers } from "./backend/handlers/handler";
 
 let backendContext: BackendHandlerContext | null = null;
 
+if (!app.isPackaged) {
+  dotenv.config({ path: path.join(__dirname, "..", ".env") });
+} else {
+  dotenv.config({ path: path.join(process.resourcesPath, ".env") });
+}
+
+console.log("✅ ENV Loaded: API_URL =", process.env.API_URL); 
+
 const createWindow = async () => {
   const mainWindow = new BrowserWindow({
-    width: 1080,
+    width: 1280,
     height: 720,
+    minWidth: 1024,
+    minHeight: 576,
     backgroundColor: "#0f172a",
     autoHideMenuBar: true,
     show: false,
@@ -16,7 +27,7 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      devTools: false,
+      // devTools: false,
     },
   });
 
@@ -37,7 +48,6 @@ const createWindow = async () => {
 app.whenReady().then(async () => {
   backendContext = registerBackendHandlers({ app, ipcMain });
 
-  // disable devtools shortcuts when packaged
   if (app.isPackaged) {
     globalShortcut.register("Control+Shift+I", () => {});
     globalShortcut.register("Command+Option+I", () => {});

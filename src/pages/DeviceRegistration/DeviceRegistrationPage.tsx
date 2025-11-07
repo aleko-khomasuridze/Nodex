@@ -231,7 +231,7 @@ const DeviceRegistration = () => {
               value={formState.username}
               onChange={handleChange("username")}
             />
-            <div className="md:col-span-2">
+            {/* <div className="md:col-span-2">
               <fieldset className="rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4">
                 <legend className="px-2 text-xs uppercase tracking-wide text-slate-400">
                   Authentication method
@@ -265,7 +265,7 @@ const DeviceRegistration = () => {
                   generate a dedicated SSH key pair for this device.
                 </p>
               </fieldset>
-            </div>
+            </div> */}
             {formState.authMethod === "password" ? (
               <FormInput
                 id="password"
