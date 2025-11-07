@@ -35,7 +35,7 @@ const useTerminalInstance = ({
         background: "#030712",
         cursor: "#34d399",
         foreground: "#f8fafc",
-        selection: "#1f2937",
+        // selection: "#1f2937",
       },
     });
 
