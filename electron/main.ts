@@ -1,70 +1,52 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
-import path from 'node:path';
-import type { BackendHandlerContext } from './backend/handlers/handler';
-import { registerBackendHandlers } from './backend/handlers/handler';
-
-const isDevelopment = process.env.NODE_ENV === 'development';
+import { app, BrowserWindow, shell, ipcMain } from "electron";
+import path from "node:path";
+import type { BackendHandlerContext } from "./backend/handlers/handler";
+import { registerBackendHandlers } from "./backend/handlers/handler";
 
 let backendContext: BackendHandlerContext | null = null;
-
-const resolveAssetPath = (...paths: string[]) => {
-  const assetsDir = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '..', 'assets');
-  return path.join(assetsDir, ...paths);
-};
 
 const createWindow = async () => {
   const mainWindow = new BrowserWindow({
     width: 1080,
     height: 720,
-    backgroundColor: '#0f172a',
+    backgroundColor: "#0f172a",
     autoHideMenuBar: true,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
   });
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    // if (isDevelopment) {
-    //   mainWindow.webContents.openDevTools({ mode: 'detach' });
-    // }
-  });
+  mainWindow.once("ready-to-show", () => mainWindow.show());
 
-  const devServerURL = process.env.VITE_DEV_SERVER_URL;
-  if (isDevelopment && devServerURL) {
-    await mainWindow.loadURL(devServerURL);
+  if (!app.isPackaged) {
+    const devURL = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+    await mainWindow.loadURL(devURL);
   } else {
-    const indexHtml = path.join(app.getAppPath(), "dist", "index.html");
-    await mainWindow.loadFile(indexHtml);
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    await mainWindow.loadFile(indexPath);
+
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
-    return { action: 'deny' };
+    return { action: "deny" };
   });
 };
 
 app.whenReady().then(async () => {
   backendContext = registerBackendHandlers({ app, ipcMain });
-
   await createWindow();
 
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      await createWindow();
-    }
+  app.on("activate", async () => {
+    if (BrowserWindow.getAllWindows().length === 0) await createWindow();
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
 });
 
 export const getBackendContext = () => backendContext;
