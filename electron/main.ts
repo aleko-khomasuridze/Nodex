@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+import { app, BrowserWindow, shell, ipcMain, globalShortcut } from "electron";
 import path from "node:path";
 import type { BackendHandlerContext } from "./backend/handlers/handler";
 import { registerBackendHandlers } from "./backend/handlers/handler";
@@ -16,13 +16,9 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      devTools: false, 
+      devTools: false,
     },
   });
-
-  if (app.isPackaged) {
-    mainWindow.removeMenu(); // <--- Kill menu completely
-  }
 
   mainWindow.once("ready-to-show", () => mainWindow.show());
 
@@ -32,20 +28,22 @@ const createWindow = async () => {
     await mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
 
-  // Block context menu in prod
   if (app.isPackaged) {
     mainWindow.webContents.on("context-menu", (e) => e.preventDefault());
-
-    // Close devtools if somehow opened
-    mainWindow.webContents.on("devtools-opened", () => {
-      mainWindow.webContents.closeDevTools();
-    });
+    mainWindow.webContents.on("devtools-opened", () => mainWindow.webContents.closeDevTools());
   }
 };
 
-
 app.whenReady().then(async () => {
   backendContext = registerBackendHandlers({ app, ipcMain });
+
+  // disable devtools shortcuts when packaged
+  if (app.isPackaged) {
+    globalShortcut.register("Control+Shift+I", () => {});
+    globalShortcut.register("Command+Option+I", () => {});
+    globalShortcut.register("F12", () => {});
+  }
+
   await createWindow();
 
   app.on("activate", async () => {
@@ -56,18 +54,5 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
-
-import { globalShortcut } from "electron";
-
-app.whenReady().then(async () => {
-  if (app.isPackaged) {
-    globalShortcut.register("Control+Shift+I", () => {});
-    globalShortcut.register("Command+Option+I", () => {});
-    globalShortcut.register("F12", () => {});
-  }
-
-  await createWindow();
-});
-
 
 export const getBackendContext = () => backendContext;
