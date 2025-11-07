@@ -25,6 +25,12 @@
       "dist-electron/**",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "assets/icons",
+        "to": "assets/icons"
+      }
+    ],
     "directories": {
       "output": "release"
     }

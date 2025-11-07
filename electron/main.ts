@@ -7,10 +7,17 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 
 let backendContext: BackendHandlerContext | null = null;
 
+const resolveAssetPath = (...paths: string[]) => {
+  const assetsDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(__dirname, '..', 'assets');
+  return path.join(assetsDir, ...paths);
+};
+
 const createWindow = async () => {
   const mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 768,
+    width: 1080,
+    height: 720,
     backgroundColor: '#0f172a',
     autoHideMenuBar: true,
     show: false,
