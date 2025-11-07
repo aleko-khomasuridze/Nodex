@@ -51,7 +51,7 @@ const TerminalSessionSection = ({
 }: TerminalSessionSectionProps) => (
   <section className="rounded-2xl border border-slate-800/70 bg-[#070d1a]/70 p-6 backdrop-blur">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1"> 
         <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/50 p-1 text-xs font-medium uppercase tracking-[0.25em] text-slate-400">
           <button
             type="button"
@@ -76,7 +76,7 @@ const TerminalSessionSection = ({
           >
             This device
           </button>
-        </div>
+        </div> 
         <h2 className="text-lg font-semibold text-white">
           {selectedPanel === "remote" ? "Embedded terminal" : "Local terminal"}
         </h2>
