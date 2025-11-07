@@ -61,7 +61,7 @@ const DeviceEditPage = () => {
           ip: record.ip,
           port: record.port ? String(record.port) : "",
           username: record.username ?? "",
-          password: record.password ?? "",
+          password: "",
         });
       } catch (loadError) {
         setStatus({

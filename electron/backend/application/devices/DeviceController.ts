@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import type {
   DeviceCreateInput,
   DeviceRecord,
@@ -5,6 +6,8 @@ import type {
 } from '../../domain/devices/Device';
 import type { DeviceRepository } from '../../domain/devices/DeviceRepository';
 import { DeviceValidationError, validateAndNormalizeInput } from '../../domain/devices/DeviceValidation';
+
+const BCRYPT_SALT_ROUNDS = 12;
 
 export class DeviceController {
   constructor(private readonly repository: DeviceRepository) {}
@@ -27,7 +30,12 @@ export class DeviceController {
     if (existing) {
       throw new DeviceValidationError('A device with this IP address is already registered.');
     }
-    return this.repository.create(normalized);
+    const { password: normalizedPassword, ...rest } = normalized;
+    const password = normalizedPassword ? await this.hashPassword(normalizedPassword) : null;
+    return this.repository.create({
+      ...rest,
+      password
+    });
   }
 
   async updateDevice(id: string, updates: DeviceUpdateInput): Promise<DeviceRecord> {
@@ -48,13 +56,17 @@ export class DeviceController {
           password: updates.password ?? existing.password
         };
 
+    const sanitizedPassword =
+      updates.password === undefined ? undefined : this.sanitizePassword(updates.password);
+    const password = await this.resolvePasswordForUpdate(sanitizedPassword, existing.password ?? null);
+
     return this.repository.update(id, {
       alias: normalized.alias,
       hostname: normalized.hostname,
       ip: normalized.ip,
       port: normalized.port,
       username: normalized.username,
-      password: normalized.password
+      password
     });
   }
 
@@ -65,5 +77,32 @@ export class DeviceController {
     }
 
     await this.repository.delete(id);
+  }
+
+  private sanitizePassword(value?: string | null): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+  }
+
+  private async resolvePasswordForUpdate(
+    sanitizedUpdate: string | null | undefined,
+    currentPassword: string | null
+  ): Promise<string | null> {
+    if (sanitizedUpdate === undefined) {
+      return currentPassword;
+    }
+
+    if (sanitizedUpdate === null) {
+      return currentPassword;
+    }
+
+    return this.hashPassword(sanitizedUpdate);
   }
 }
